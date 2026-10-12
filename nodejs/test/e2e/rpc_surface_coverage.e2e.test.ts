@@ -327,7 +327,7 @@ describe("Generated RPC surface coverage", () => {
             ...collectRuntimeFunctions(session.rpc, "session"),
         ]);
 
-        expect(inventory).toHaveLength(408);
+        expect(inventory).toHaveLength(410);
         expect(
             inventory.filter(
                 (method) => method.wireMethod === "session.model.getReasoningSummaries"

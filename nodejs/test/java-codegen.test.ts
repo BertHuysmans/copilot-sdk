@@ -15,6 +15,43 @@ function rpcSource(files: Map<string, string>, name: string): string {
     return source!;
 }
 
+describe("java RPC primitive results", () => {
+    it.each([
+        ["boolean", "Boolean"],
+        ["integer", "Long"],
+        ["number", "Double"],
+        ["string", "String"],
+    ] as const)("preserves inline and referenced %s results", async (type, javaType) => {
+        const schema = {
+            server: {
+                sample: {
+                    inline: {
+                        rpcMethod: "sample.inline",
+                        params: null,
+                        result: { type },
+                    },
+                    referenced: {
+                        rpcMethod: "sample.referenced",
+                        visibility: "internal",
+                        params: null,
+                        result: { $ref: "#/definitions/ScalarResult" },
+                    },
+                    empty: { rpcMethod: "sample.empty", params: null, result: null },
+                },
+            },
+            definitions: { ScalarResult: { type } },
+        } satisfies Parameters<typeof renderRpcWrappers>[0];
+        const code = rpcSource(await renderRpcWrappers(schema), "ServerSampleApi");
+
+        expect(code).toContain(`CompletableFuture<${javaType}> inline()`);
+        expect(code).toContain(`"sample.inline", java.util.Map.of(), ${javaType}.class`);
+        expect(code).toContain(`CompletableFuture<${javaType}> referenced()`);
+        expect(code).toContain(`"sample.referenced", java.util.Map.of(), ${javaType}.class`);
+        expect(code).toContain("CompletableFuture<Void> empty()");
+        expect(code).toContain('"sample.empty", java.util.Map.of(), Void.class');
+    });
+});
+
 it("preserves boolean-map RPC results without widening them to JsonNode", async () => {
     const files = await renderRpcWrappers({
         server: {

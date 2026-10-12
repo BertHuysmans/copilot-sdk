@@ -3173,6 +3173,10 @@ function wrapperResultClassName(method: RpcMethodNode): string {
     // Inline result schema with properties
     let result = originalResult;
     if (result.$ref) result = resolveRef(result) as JSONSchema7;
+    if (result.type === "boolean" || result.type === "integer" || result.type === "number"
+        || (result.type === "string" && !result.enum)) {
+        return schemaTypeToJava(result, false, rpcResultClassName(method.rpcMethod), "value", new Map()).javaType;
+    }
     if (
         result &&
         typeof result === "object" &&
@@ -3227,6 +3231,11 @@ function addWrapperResultImports(resultType: string, allImports: Set<string>, pa
 
     if (resultType === "JsonNode") {
         allImports.add("com.fasterxml.jackson.databind.JsonNode");
+        return;
+    }
+
+    if (resultType === "UUID" || resultType === "OffsetDateTime") {
+        allImports.add(resultType === "UUID" ? "java.util.UUID" : "java.time.OffsetDateTime");
         return;
     }
 

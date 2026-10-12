@@ -1894,9 +1894,12 @@ function resolveRpcType(schema: JSONSchema7, isRequired: boolean, parentClassNam
     if (isOpaqueJson(schema)) {
         return isRequired ? "JsonElement" : "JsonElement?";
     }
-    if (schema.type === "object" && schema.additionalProperties === true &&
+    if (schema.type === "object" && schema.additionalProperties !== false &&
         (!schema.properties || Object.keys(schema.properties).length === 0)) {
-        return isRequired ? "IDictionary<string, JsonElement>" : "IDictionary<string, JsonElement>?";
+        const valueType = typeof schema.additionalProperties === "object"
+            ? resolveRpcType(schema.additionalProperties, true, parentClassName, `${propName}Value`, classes)
+            : "JsonElement";
+        return isRequired ? `IDictionary<string, ${valueType}>` : `IDictionary<string, ${valueType}>?`;
     }
     // Handle $ref by resolving against schema definitions and generating the referenced class
     if (schema.$ref) {
@@ -1911,7 +1914,8 @@ function resolveRpcType(schema: JSONSchema7, isRequired: boolean, parentClassNam
             return isRequired ? enumName : `${enumName}?`;
         }
 
-        if (refSchema.type === "object" && refSchema.properties) {
+        if (refSchema.type === "object" && refSchema.properties &&
+            (Object.keys(refSchema.properties).length > 0 || refSchema.additionalProperties === false)) {
             const cls = emitRpcClass(typeName, refSchema, "public", classes);
             if (cls) classes.push(cls);
             return isRequired ? typeName : `${typeName}?`;
@@ -2005,18 +2009,14 @@ function resolveRpcType(schema: JSONSchema7, isRequired: boolean, parentClassNam
     }
     if (schema.type === "array" && schema.items) {
         const items = schema.items as JSONSchema7;
-        if (items.type === "object" && items.properties) {
+        if (items.type === "object" && items.properties &&
+            (Object.keys(items.properties).length > 0 || items.additionalProperties === false)) {
             const itemClass = (items.title as string) ?? `${parentClassName}${singularPascal(propName)}`;
             classes.push(emitRpcClass(itemClass, items, "public", classes));
             return isRequired ? `IList<${itemClass}>` : `IList<${itemClass}>?`;
         }
         const itemType = resolveRpcType(items, true, parentClassName, `${propName}Item`, classes);
         return isRequired ? `IList<${itemType}>` : `IList<${itemType}>?`;
-    }
-    if (schema.type === "object" && schema.additionalProperties && typeof schema.additionalProperties === "object") {
-        const vs = schema.additionalProperties as JSONSchema7;
-        const valueType = resolveRpcType(vs, true, parentClassName, `${propName}Value`, classes);
-        return isRequired ? `IDictionary<string, ${valueType}>` : `IDictionary<string, ${valueType}>?`;
     }
     return schemaTypeToCSharp(schema, isRequired, rpcKnownTypes, propName);
 }

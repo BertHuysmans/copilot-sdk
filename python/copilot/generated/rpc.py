@@ -4352,6 +4352,90 @@ class _FeatureFlagsResolveRequest:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _FeatureFlagsResolveStartupGatesRequest:
+    """Caller population and startup inputs to resolve named online-experiment gates for.
+    Carries no account: the runtime resolves the assignment for the authentication it already
+    holds.
+    """
+    flags: list[str]
+    """The feature flags to resolve. A name this runtime does not declare is reported as an
+    error rather than as a disabled flag.
+    """
+    is_experimental: bool
+    """Whether the caller is in an experimental population."""
+
+    is_staff: bool
+    """Whether the caller is GitHub or Microsoft staff."""
+
+    is_team: bool
+    """Whether the caller belongs to a team plan."""
+
+    refresh_without_session: bool
+    """Whether the runtime may refresh the cached assignment over the network without an active
+    session. The refresh never blocks this call: the answer comes from the cache either way,
+    so a refresh only affects a later launch.
+    """
+    streamer_mode: bool
+    """Whether streamer mode is on, which withholds the populations an experiment would
+    otherwise segment on.
+    """
+    config: Any = None
+    """User settings document whose `featureFlags` block is layered on top of the resolved set."""
+
+    environment: dict[str, str] | None = None
+    """Environment to read flag overrides from. Defaults to this runtime process's own
+    environment.
+    """
+    first_launch_at_millis: float | None = None
+    """When this installation first launched, in milliseconds since the Unix epoch. Experiments
+    that segment on installation age read it. Omit when the first launch was never recorded.
+    """
+    is_staff_github: bool | None = None
+    """GitHub-staff membership. Omit when it was never recorded: a legacy staff account then
+    counts as both staff populations and keeps every staff feature.
+    """
+    is_staff_microsoft: bool | None = None
+    """Microsoft-staff membership. Omitted the same way as `isStaffGitHub`."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_FeatureFlagsResolveStartupGatesRequest':
+        assert isinstance(obj, dict)
+        flags = from_list(from_str, obj.get("flags"))
+        is_experimental = from_bool(obj.get("isExperimental"))
+        is_staff = from_bool(obj.get("isStaff"))
+        is_team = from_bool(obj.get("isTeam"))
+        refresh_without_session = from_bool(obj.get("refreshWithoutSession"))
+        streamer_mode = from_bool(obj.get("streamerMode"))
+        config = obj.get("config")
+        environment = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("environment"))
+        first_launch_at_millis = from_union([from_float, from_none], obj.get("firstLaunchAtMillis"))
+        is_staff_github = from_union([from_bool, from_none], obj.get("isStaffGithub"))
+        is_staff_microsoft = from_union([from_bool, from_none], obj.get("isStaffMicrosoft"))
+        return _FeatureFlagsResolveStartupGatesRequest(flags, is_experimental, is_staff, is_team, refresh_without_session, streamer_mode, config, environment, first_launch_at_millis, is_staff_github, is_staff_microsoft)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["flags"] = from_list(from_str, self.flags)
+        result["isExperimental"] = from_bool(self.is_experimental)
+        result["isStaff"] = from_bool(self.is_staff)
+        result["isTeam"] = from_bool(self.is_team)
+        result["refreshWithoutSession"] = from_bool(self.refresh_without_session)
+        result["streamerMode"] = from_bool(self.streamer_mode)
+        if self.config is not None:
+            result["config"] = self.config
+        if self.environment is not None:
+            result["environment"] = from_union([lambda x: from_dict(from_str, x), from_none], self.environment)
+        if self.first_launch_at_millis is not None:
+            result["firstLaunchAtMillis"] = from_union([to_float, from_none], self.first_launch_at_millis)
+        if self.is_staff_github is not None:
+            result["isStaffGithub"] = from_union([from_bool, from_none], self.is_staff_github)
+        if self.is_staff_microsoft is not None:
+            result["isStaffMicrosoft"] = from_union([from_bool, from_none], self.is_staff_microsoft)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class FleetStartRequest:
     """Parameters for starting fleet orchestration: an optional user prompt combined with the
@@ -4469,6 +4553,110 @@ class FolderTrustCheckResult:
     def to_dict(self) -> dict:
         result: dict = {}
         result["trusted"] = from_bool(self.trusted)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _FolderTrustIsTrustedParams:
+    """A folder to check against a persisted trusted-folders list, and the configuration
+    directory holding that list.
+    """
+    path: str
+    """Folder to check. A folder counts as trusted when it is itself listed, when an ancestor is
+    listed, or when its git root is listed.
+    """
+    config_dir: str | None = None
+    """Configuration directory to read the trusted-folders list from. Omit it to read the
+    default location; supply it when the host has redirected its configuration, or the check
+    answers from a list the host is not using.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_FolderTrustIsTrustedParams':
+        assert isinstance(obj, dict)
+        path = from_str(obj.get("path"))
+        config_dir = from_union([from_str, from_none], obj.get("configDir"))
+        return _FolderTrustIsTrustedParams(path, config_dir)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["path"] = from_str(self.path)
+        if self.config_dir is not None:
+            result["configDir"] = from_union([from_str, from_none], self.config_dir)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ForceLoginOrgsDecision:
+    """The verdict of the `forceLoginOrgs` enterprise sign-in pin for one credential. A managed
+    device may pin Copilot to an approved set of GitHub organizations so a developer cannot
+    sign in with a personal — or another enterprise's — account and escape every control that
+    keys off the signed-in identity. A host must refuse to proceed when `allowed` is false;
+    the remaining fields explain the refusal rather than qualifying it.
+
+    The enterprise sign-in verdict for the credential this resolution ran against, evaluated
+    over the effective policy so a server-delivered pin is honored alongside a device one.
+    Computed on every resolution, including one that was not retained, so a host that
+    declines to apply policy still cannot proceed past a pin.
+    """
+    allowed: bool
+    """Whether the client may proceed. True whenever no pin is in force, so an unmanaged host is
+    never blocked.
+    """
+    enforced: bool
+    """Whether a pin applies at all. Distinguishes "allowed because unmanaged" from "allowed
+    because the account is approved", which a diagnostics surface needs and which also
+    decides whether a bring-your-own-key provider may serve inference.
+    """
+    policy_diagnostics: list[str]
+    """Error-level detail from managed-policy discovery — which file failed to load, which field
+    failed validation. Carried on the decision rather than left to the log because a refusal
+    can exit the process before a log sink exists, which would discard the only actionable
+    diagnostic a misconfigured managed device produces.
+    """
+    required_orgs: list[str]
+    """The approved organization logins, as configured. Enterprise configuration rather than
+    user data, so it is safe to name in a message or a log line.
+    """
+    denial: str | None = None
+    """A stable kebab-case reason code when refused: `org-not-approved`,
+    `unverifiable-credential`, `policy-undetermined`, `policy-invalid`, `not-signed-in`, or
+    `membership-unknown`. Omitted when allowed. Treat an unrecognized code as a refusal
+    rather than mapping it to an allow: a code this host has not been taught about still
+    denied the credential.
+    """
+    matched_org: str | None = None
+    """The approved organization the account matched, when allowed under a pin."""
+
+    message: str | None = None
+    """A developer-facing explanation of the refusal. Omitted when allowed."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ForceLoginOrgsDecision':
+        assert isinstance(obj, dict)
+        allowed = from_bool(obj.get("allowed"))
+        enforced = from_bool(obj.get("enforced"))
+        policy_diagnostics = from_list(from_str, obj.get("policyDiagnostics"))
+        required_orgs = from_list(from_str, obj.get("requiredOrgs"))
+        denial = from_union([from_str, from_none], obj.get("denial"))
+        matched_org = from_union([from_str, from_none], obj.get("matchedOrg"))
+        message = from_union([from_str, from_none], obj.get("message"))
+        return _ForceLoginOrgsDecision(allowed, enforced, policy_diagnostics, required_orgs, denial, matched_org, message)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["allowed"] = from_bool(self.allowed)
+        result["enforced"] = from_bool(self.enforced)
+        result["policyDiagnostics"] = from_list(from_str, self.policy_diagnostics)
+        result["requiredOrgs"] = from_list(from_str, self.required_orgs)
+        if self.denial is not None:
+            result["denial"] = from_union([from_str, from_none], self.denial)
+        if self.matched_org is not None:
+            result["matchedOrg"] = from_union([from_str, from_none], self.matched_org)
+        if self.message is not None:
+            result["message"] = from_union([from_str, from_none], self.message)
         return result
 
 class GhCLIAuthInfoType(Enum):
@@ -6691,6 +6879,26 @@ class HostType(Enum):
     GITHUB = "github"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _LocationPermissionsCleanupResult:
+    """Which stored location permissions were dropped because their directory is gone."""
+
+    removed_location_keys: list[str]
+    """Location keys whose grants were removed. Empty when every stored location still exists."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_LocationPermissionsCleanupResult':
+        assert isinstance(obj, dict)
+        removed_location_keys = from_list(from_str, obj.get("removedLocationKeys"))
+        return _LocationPermissionsCleanupResult(removed_location_keys)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["removedLocationKeys"] = from_list(from_str, self.removed_location_keys)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 class SessionLogLevel(Enum):
     """Log severity level. Determines how the message is displayed in the timeline. Defaults to
     "info".
@@ -6866,6 +7074,86 @@ class ManagedSettingMeta:
         if self.requested is not None:
             result["requested"] = from_union([from_str, from_none], self.requested)
         return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsApplyControlsParams:
+    """A user settings document and the effective managed policy whose controlled entries should
+    be stamped onto it.
+    """
+    settings: Any
+    """The user settings document to stamp. Entries the managed layer does not name are returned
+    exactly as supplied.
+    """
+    managed: Any = None
+    """The effective managed policy, as composed by `managedSettings.resolveEffectiveValue`.
+    Omit it on an unmanaged host: the settings then come back unchanged.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsApplyControlsParams':
+        assert isinstance(obj, dict)
+        settings = obj.get("settings")
+        managed = obj.get("managed")
+        return _ManagedSettingsApplyControlsParams(settings, managed)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["settings"] = self.settings
+        if self.managed is not None:
+            result["managed"] = self.managed
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsApplyControlsResult:
+    """The user settings with the managed layer's controlled entries stamped on."""
+
+    settings_json: Any
+    """The resulting settings document."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsApplyControlsResult':
+        assert isinstance(obj, dict)
+        settings_json = obj.get("settingsJson")
+        return _ManagedSettingsApplyControlsResult(settings_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["settingsJson"] = self.settings_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsBypassDisableSource(Enum):
+    """Which layer disabled bypass-permissions mode. The layer matters because only a
+    server-delivered disable is pinned to an account and can later be lifted by signing in
+    elsewhere.
+
+    Which layer currently disables bypass mode. Omit it when nothing does.
+
+    Which layer disables bypass mode after this resolution. Omitted when none does, which is
+    what a lifted disable looks like.
+    """
+    MANAGED = "managed"
+    MDM = "mdm"
+    USER = "user"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsBypassPolicyResolution(Enum):
+    """What the managed-policy resolution said about bypass-permissions mode. `unknown` is a
+    third answer rather than a missing one, and the caller must send it explicitly when it
+    has no verdict.
+
+    What the resolution said about bypass mode. Send `unknown` rather than omitting the field
+    when there is no verdict.
+    """
+    ALLOWED = "allowed"
+    DISABLED = "disabled"
+    UNKNOWN = "unknown"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 class ManagedSettingsChannel(Enum):
@@ -7073,6 +7361,186 @@ class ManagedSettingsValues:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsPolicyHelperReason(Enum):
+    """The policy-helper invocation reason. Defaults to sessionStart.
+
+    The operation that requires a policy-helper response.
+    """
+    PLUGIN_ACTIVATION = "pluginActivation"
+    SESSION_START = "sessionStart"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsServerPolicyCacheMode(Enum):
+    """How this ingestion may use the on-disk server-policy cache. Defaults to the runtime's own
+    policy when omitted.
+
+    How an ingestion may use the on-disk server-policy cache.
+
+    How this resolution may use the on-disk server-policy cache. Defaults to the runtime's
+    own policy when omitted. Rejected when combined with `bypassCacheRead`, because the two
+    express the same decision and accepting both would leave the caller unsure which one the
+    runtime honored.
+    """
+    CACHE_ONLY = "cacheOnly"
+    DISABLED = "disabled"
+    FALLBACK_ONLY = "fallbackOnly"
+    PREFER_FRESH = "preferFresh"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsLogLevel(Enum):
+    """Severity of this diagnostic.
+
+    Severity of a diagnostic emitted while ingesting managed settings.
+    """
+    DEBUG = "debug"
+    ERROR = "error"
+    INFO = "info"
+    WARNING = "warning"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsPolicyHelperAuthority(Enum):
+    """Which channel registered the policy helper that produced the helper layer.
+
+    Which channel registered the policy helper that produced a helper layer.
+    """
+    DEVICE = "device"
+    SERVER = "server"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _ManagedSettingsServerPolicyResolution(Enum):
+    """How the server layer was resolved.
+
+    How the server layer of an ingestion was resolved.
+
+    How the current runtime resolved the server layer.
+    """
+    CACHE_MISS = "cacheMiss"
+    FAIL_CLOSED = "failClosed"
+    FAIL_OPEN = "failOpen"
+    FALLBACK_CACHE = "fallbackCache"
+    FRESH_CACHE = "freshCache"
+    LIVE = "live"
+    SKIPPED_NO_TOKEN = "skippedNoToken"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsLoadRemoteControlResult:
+    """The managed remote-control policy in force for an account, if any. An absent policy means
+    the account is unmanaged for this capability, which a host reads as allowed — so absence
+    here is a positive statement that no policy applies, never a stand-in for a resolution
+    that failed. A resolution that cannot be completed is rejected instead.
+    """
+    remote_control: Any = None
+    """The account's `remoteControl` policy document. Absent when no managed policy governs
+    remote control for this account. Reported as an explicit disabled policy, rather than as
+    absence, when the service refused to deliver a policy this client is too old to enforce.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsLoadRemoteControlResult':
+        assert isinstance(obj, dict)
+        remote_control = obj.get("remoteControl")
+        return _ManagedSettingsLoadRemoteControlResult(remote_control)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.remote_control is not None:
+            result["remoteControl"] = self.remote_control
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsParseClientValueParams:
+    """The client-supplied managed settings to validate and normalize. Omitting them is valid
+    and yields no policy.
+    """
+    settings: Any = None
+    """The managed settings a client is supplying for a session it is about to open. Omit them
+    when the client is imposing no policy of its own.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsParseClientValueParams':
+        assert isinstance(obj, dict)
+        settings = obj.get("settings")
+        return _ManagedSettingsParseClientValueParams(settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.settings is not None:
+            result["settings"] = self.settings
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsParseClientValueResult:
+    """The accepted managed settings, reduced to the keys a client is allowed to set."""
+
+    settings_json: Any = None
+    """The normalized settings. Omitted when the client supplied none. An accepted document that
+    sets nothing comes back as an empty object, which is distinct from omission.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsParseClientValueResult':
+        assert isinstance(obj, dict)
+        settings_json = obj.get("settingsJson")
+        return _ManagedSettingsParseClientValueResult(settings_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.settings_json is not None:
+            result["settingsJson"] = self.settings_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsReadDeviceResult:
+    """The device-managed settings layer, with the sandbox floor and the load outcome a host
+    needs to compose it into an effective policy.
+    """
+    load_failed: bool
+    """Whether discovery or validation failed. A host must treat this as "policy unknown" rather
+    than "no policy": absent settings with this set false mean the device genuinely has none.
+    """
+    sandbox_floor: Any = None
+    """Sandbox floor read from the discovered document before validation, so a document that is
+    otherwise rejected can still raise the floor it declared.
+    """
+    settings: Any = None
+    """Validated, canonical device-managed settings. Omitted when no device policy was
+    discovered, when the discovered document failed validation, or when it validated to an
+    empty object — an empty document carries no policy, and reporting it as present would
+    outrank layers that do.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsReadDeviceResult':
+        assert isinstance(obj, dict)
+        load_failed = from_bool(obj.get("loadFailed"))
+        sandbox_floor = obj.get("sandboxFloor")
+        settings = obj.get("settings")
+        return _ManagedSettingsReadDeviceResult(load_failed, sandbox_floor, settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["loadFailed"] = from_bool(self.load_failed)
+        if self.sandbox_floor is not None:
+            result["sandboxFloor"] = self.sandbox_floor
+        if self.settings is not None:
+            result["settings"] = self.settings
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class ManagedSettingsReadResult:
     """Validated device-managed settings discovered before a session exists."""
@@ -7096,6 +7564,105 @@ class ManagedSettingsReadResult:
         result: dict = {}
         if self.error_message is not None:
             result["errorMessage"] = from_union([from_str, from_none], self.error_message)
+        if self.settings_json is not None:
+            result["settingsJson"] = self.settings_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveDeviceForceLoginOrgsGateParams:
+    """The credential and environment to evaluate the device-channel sign-in pin against."""
+
+    environment: Any
+    """The host's environment variables. Read for the variables that would make an identity's
+    membership snapshot forgeable, so a credential whose provenance cannot be trusted is
+    refused rather than accepted.
+    """
+    auth_info: Any = None
+    """The authenticated identity to judge. Omitted when signed out, which is the case the
+    device channel exists to serve: it can refuse a first sign-in before any credential
+    exists.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveDeviceForceLoginOrgsGateParams':
+        assert isinstance(obj, dict)
+        environment = obj.get("environment")
+        auth_info = obj.get("authInfo")
+        return _ManagedSettingsResolveDeviceForceLoginOrgsGateParams(environment, auth_info)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["environment"] = self.environment
+        if self.auth_info is not None:
+            result["authInfo"] = self.auth_info
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveEffectiveValueParams:
+    """The managed-settings layers to compose into an effective policy. Every layer is optional;
+    omitting all of them yields no effective policy.
+    """
+    device_sandbox_floor: Any = None
+    """The device sandbox floor, folded into the device layer under `sandbox` before composition."""
+
+    mdm: Any = None
+    """The device layer: native MDM and managed-file settings describing the machine rather than
+    the account.
+    """
+    policy_helper: Any = None
+    """The policy-helper layer, an enforced channel sourced from a platform policy helper
+    process.
+    """
+    server: Any = None
+    """The account's server-delivered org policy, as returned by a managed-settings fetch.
+    Omitted before sign-in or when the fetch has not landed.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveEffectiveValueParams':
+        assert isinstance(obj, dict)
+        device_sandbox_floor = obj.get("deviceSandboxFloor")
+        mdm = obj.get("mdm")
+        policy_helper = obj.get("policyHelper")
+        server = obj.get("server")
+        return _ManagedSettingsResolveEffectiveValueParams(device_sandbox_floor, mdm, policy_helper, server)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.device_sandbox_floor is not None:
+            result["deviceSandboxFloor"] = self.device_sandbox_floor
+        if self.mdm is not None:
+            result["mdm"] = self.mdm
+        if self.policy_helper is not None:
+            result["policyHelper"] = self.policy_helper
+        if self.server is not None:
+            result["server"] = self.server
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveEffectiveValueResult:
+    """The effective managed policy composed from the supplied layers."""
+
+    settings_json: Any = None
+    """The composed effective managed settings. Omitted when no layer sets anything, so an
+    unmanaged host locks nothing. Carries `sandboxAdvisoryFloorDeclined: true` when an
+    advisory server force-on was dropped because this host cannot run the sandbox.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveEffectiveValueResult':
+        assert isinstance(obj, dict)
+        settings_json = obj.get("settingsJson")
+        return _ManagedSettingsResolveEffectiveValueResult(settings_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
         if self.settings_json is not None:
             result["settingsJson"] = self.settings_json
         return result
@@ -7139,6 +7706,119 @@ class ManagedSettingsResolveRequest:
             result["selectionId"] = from_union([from_str, from_none], self.selection_id)
         if self.working_directory is not None:
             result["workingDirectory"] = from_union([from_str, from_none], self.working_directory)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsRetainPolicyParams:
+    """The managed layers to retain as this process's startup policy, with the outcome of
+    fetching each one.
+    """
+    device_load_failed: bool
+    """Whether the device load failed. Report it honestly, for the same reason as
+    `serverFetchFailed`.
+    """
+    device_sandbox_undetermined: bool
+    """Whether the device sandbox intent is unreadable independently of its other settings."""
+
+    device_source_found: bool
+    """Whether a device policy source demonstrably exists. This, not a read error, is the
+    evidence a device is managed, so a fail-closed policy gates on it.
+    """
+    managed_policy_present: bool
+    """Whether any managed policy source exists, independently of fetch failures."""
+
+    permission_policy_undetermined: bool
+    """Whether permission policy is undetermined. Sandbox-only uncertainty does not imply this
+    flag.
+    """
+    preserve_server_state: bool
+    """Preserve the retained server layer during a device-only resolution."""
+
+    sandbox_enabled_by_undetermined_policy: bool
+    """Whether uncertainty alone enabled the shared sandbox floor."""
+
+    sandbox_floor_undetermined: bool
+    """Whether the shared sandbox policy is undetermined. Diagnostic errors alone do not imply
+    this flag.
+    """
+    server_fetch_failed: bool
+    """Whether the server fetch failed. Report it honestly: true keeps the already-retained
+    server layer rather than replacing it with an absent one.
+    """
+    server_forced_refresh_failure: bool
+    """Whether a required fresh server-policy confirmation failed."""
+
+    server_source_found: bool
+    """Whether the server policy source exists, even when its response is unavailable."""
+
+    device_response: Any = None
+    """The device/MDM policy layer."""
+
+    device_sandbox_floor: Any = None
+    """Sandbox floor declared by the device layer, carried separately so a document that failed
+    validation can still raise the floor.
+    """
+    policy_helper_response: Any = None
+    """The policy helper's response: the third managed layer that a process owning its startup
+    policy resolves. It is retained with the other two so that every ambient read in this
+    process, including the mutation guards and the governed marketplace allowlist that the
+    `plugins.*` handlers derive, sees the whole policy the process fetched. A session-owning
+    process omits it, because it resolves a helper per session against that session's working
+    directory.
+    """
+    server_response: Any = None
+    """The resolved server policy. A known source can lack a response after a forced-refresh
+    failure.
+    """
+    shared_sandbox_floor: Any = None
+    """Shared server/device sandbox floor, excluding session-local helper policy."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsRetainPolicyParams':
+        assert isinstance(obj, dict)
+        device_load_failed = from_bool(obj.get("deviceLoadFailed"))
+        device_sandbox_undetermined = from_bool(obj.get("deviceSandboxUndetermined"))
+        device_source_found = from_bool(obj.get("deviceSourceFound"))
+        managed_policy_present = from_bool(obj.get("managedPolicyPresent"))
+        permission_policy_undetermined = from_bool(obj.get("permissionPolicyUndetermined"))
+        preserve_server_state = from_bool(obj.get("preserveServerState"))
+        sandbox_enabled_by_undetermined_policy = from_bool(obj.get("sandboxEnabledByUndeterminedPolicy"))
+        sandbox_floor_undetermined = from_bool(obj.get("sandboxFloorUndetermined"))
+        server_fetch_failed = from_bool(obj.get("serverFetchFailed"))
+        server_forced_refresh_failure = from_bool(obj.get("serverForcedRefreshFailure"))
+        server_source_found = from_bool(obj.get("serverSourceFound"))
+        device_response = obj.get("deviceResponse")
+        device_sandbox_floor = obj.get("deviceSandboxFloor")
+        policy_helper_response = obj.get("policyHelperResponse")
+        server_response = obj.get("serverResponse")
+        shared_sandbox_floor = obj.get("sharedSandboxFloor")
+        return _ManagedSettingsRetainPolicyParams(device_load_failed, device_sandbox_undetermined, device_source_found, managed_policy_present, permission_policy_undetermined, preserve_server_state, sandbox_enabled_by_undetermined_policy, sandbox_floor_undetermined, server_fetch_failed, server_forced_refresh_failure, server_source_found, device_response, device_sandbox_floor, policy_helper_response, server_response, shared_sandbox_floor)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["deviceLoadFailed"] = from_bool(self.device_load_failed)
+        result["deviceSandboxUndetermined"] = from_bool(self.device_sandbox_undetermined)
+        result["deviceSourceFound"] = from_bool(self.device_source_found)
+        result["managedPolicyPresent"] = from_bool(self.managed_policy_present)
+        result["permissionPolicyUndetermined"] = from_bool(self.permission_policy_undetermined)
+        result["preserveServerState"] = from_bool(self.preserve_server_state)
+        result["sandboxEnabledByUndeterminedPolicy"] = from_bool(self.sandbox_enabled_by_undetermined_policy)
+        result["sandboxFloorUndetermined"] = from_bool(self.sandbox_floor_undetermined)
+        result["serverFetchFailed"] = from_bool(self.server_fetch_failed)
+        result["serverForcedRefreshFailure"] = from_bool(self.server_forced_refresh_failure)
+        result["serverSourceFound"] = from_bool(self.server_source_found)
+        if self.device_response is not None:
+            result["deviceResponse"] = self.device_response
+        if self.device_sandbox_floor is not None:
+            result["deviceSandboxFloor"] = self.device_sandbox_floor
+        if self.policy_helper_response is not None:
+            result["policyHelperResponse"] = self.policy_helper_response
+        if self.server_response is not None:
+            result["serverResponse"] = self.server_response
+        if self.shared_sandbox_floor is not None:
+            result["sharedSandboxFloor"] = self.shared_sandbox_floor
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -10999,6 +11679,62 @@ class PermissionsConfigureResult:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _PermissionsEvaluateManagedPolicyParams:
+    """The verbatim managed `permissions` slice to interpret."""
+
+    permissions: Any = None
+    """The `permissions` object from a managed settings layer, for example
+    `{"disableBypassPermissionsMode":"disable"}`. Omitted or null means no managed policy
+    applies.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_PermissionsEvaluateManagedPolicyParams':
+        assert isinstance(obj, dict)
+        permissions = obj.get("permissions")
+        return _PermissionsEvaluateManagedPolicyParams(permissions)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.permissions is not None:
+            result["permissions"] = self.permissions
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class PermissionsEvaluateManagedPolicyResult:
+    """The policy questions a host asks before granting elevated permissions."""
+
+    bypass_permissions_disabled: bool
+    """True when managed policy forbids bypass-permissions mode, so allow-all style flags must
+    not take effect.
+    """
+    permission_rules_active: bool
+    """True when the managed layer supplies permission rules that the session must enforce."""
+
+    policy_undetermined: bool
+    """True when a managed policy exists but this build could not determine its meaning. Hosts
+    fail closed on it rather than assuming permission was granted.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'PermissionsEvaluateManagedPolicyResult':
+        assert isinstance(obj, dict)
+        bypass_permissions_disabled = from_bool(obj.get("bypassPermissionsDisabled"))
+        permission_rules_active = from_bool(obj.get("permissionRulesActive"))
+        policy_undetermined = from_bool(obj.get("policyUndetermined"))
+        return PermissionsEvaluateManagedPolicyResult(bypass_permissions_disabled, permission_rules_active, policy_undetermined)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["bypassPermissionsDisabled"] = from_bool(self.bypass_permissions_disabled)
+        result["permissionRulesActive"] = from_bool(self.permission_rules_active)
+        result["policyUndetermined"] = from_bool(self.policy_undetermined)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class PermissionsFolderTrustAddTrustedResult:
     """Indicates whether the operation succeeded."""
@@ -11324,6 +12060,66 @@ class PermissionsUrlsSetUnrestrictedModeResult:
     def to_dict(self) -> dict:
         result: dict = {}
         result["success"] = from_bool(self.success)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class PersistenceWriteRawJSONLockedRequest:
+    """A complete JSON snapshot to write under the runtime's per-path file lock."""
+
+    data_json: str
+    """The serialized JSON document to write. It replaces the file's contents entirely; nothing
+    is merged.
+    """
+    path: str
+    """Absolute path of the file to replace. Parent directories are created when missing."""
+
+    file_header: str | None = None
+    """Comment lines to emit above the document, for a format that tolerates them. Omit for
+    strict JSON.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'PersistenceWriteRawJSONLockedRequest':
+        assert isinstance(obj, dict)
+        data_json = from_str(obj.get("dataJson"))
+        path = from_str(obj.get("path"))
+        file_header = from_union([from_none, from_str], obj.get("fileHeader"))
+        return PersistenceWriteRawJSONLockedRequest(data_json, path, file_header)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["dataJson"] = from_str(self.data_json)
+        result["path"] = from_str(self.path)
+        if self.file_header is not None:
+            result["fileHeader"] = from_union([from_none, from_str], self.file_header)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class PersistenceWriteRawJSONLockedResult:
+    """The outcome of a locked snapshot write."""
+
+    success: bool
+    """Whether the file now holds the requested contents."""
+
+    error: str | None = None
+    """Why the write failed. Absent when `success` is true. A lock the runtime could not acquire
+    in time reports here rather than raising.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'PersistenceWriteRawJSONLockedResult':
+        assert isinstance(obj, dict)
+        success = from_bool(obj.get("success"))
+        error = from_union([from_none, from_str], obj.get("error"))
+        return PersistenceWriteRawJSONLockedResult(success, error)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["success"] = from_bool(self.success)
+        if self.error is not None:
+            result["error"] = from_union([from_none, from_str], self.error)
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -13040,6 +13836,29 @@ class RemoteSessionRepository:
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 # Internal: this type is an internal SDK API and is not part of the public surface.
+class _SettingsEditOperation(Enum):
+    """Set a scalar, add or remove a string list item, or remove the setting. The handler
+    rejects a missing or incompatible value.
+
+    One atomic settings mutation.
+    """
+    ADD_ITEM = "add-item"
+    REMOVE = "remove"
+    REMOVE_ITEM = "remove-item"
+    SET = "set"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _RepoSettingsEditScope(Enum):
+    """Shared or local repository settings file.
+
+    Which repository settings file to edit.
+    """
+    LOCAL = "local"
+    REPO = "repo"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
 @dataclass
 class _RepoSettingsReadRawRequest:
     """Which repository settings file to read."""
@@ -13169,6 +13988,27 @@ class _RepoSettingsWriteKeyRequest:
 
 class ResponseFormatType(Enum):
     JSON_SCHEMA = "json_schema"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class SandboxApplyDefaultsRequest:
+    """The stored sandbox settings to resolve against the defaults."""
+
+    stored: Any
+    """The sandbox settings as stored in the settings file. An empty object resolves to the
+    defaults alone.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxApplyDefaultsRequest':
+        assert isinstance(obj, dict)
+        stored = obj.get("stored")
+        return SandboxApplyDefaultsRequest(stored)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["stored"] = self.stored
+        return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
@@ -13433,6 +14273,102 @@ class SandboxDisableForSessionResult:
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
+class SandboxDocsURLResult:
+    """The documentation URL a host cites when it declines or downgrades a sandbox setting."""
+
+    url: str
+    """Documentation URL describing the sandbox and the settings that control it."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxDocsURLResult':
+        assert isinstance(obj, dict)
+        url = from_str(obj.get("url"))
+        return SandboxDocsURLResult(url)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["url"] = from_str(self.url)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxEffectiveForOptionalParams:
+    """A sandbox config and the per-feature routing flag to resolve it for."""
+
+    routing_flag: str
+    """The routing flag naming the feature being launched, such as `sandboxMcpServers` or
+    `sandboxLspServers`.
+    """
+    sandbox: Any = None
+    """The session's resolved `sandbox` slice. Omitted when the host has none, which yields a
+    disabled sandbox rather than an error.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxEffectiveForOptionalParams':
+        assert isinstance(obj, dict)
+        routing_flag = from_str(obj.get("routingFlag"))
+        sandbox = obj.get("sandbox")
+        return _SandboxEffectiveForOptionalParams(routing_flag, sandbox)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["routingFlag"] = from_str(self.routing_flag)
+        if self.sandbox is not None:
+            result["sandbox"] = self.sandbox
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxEffectiveForOptionalResult:
+    """The sandbox a named feature actually launches under."""
+
+    sandbox_json: Any
+    """The effective sandbox config for the requested feature, or a disabled sandbox when the
+    feature is routed out of it.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxEffectiveForOptionalResult':
+        assert isinstance(obj, dict)
+        sandbox_json = obj.get("sandboxJson")
+        return _SandboxEffectiveForOptionalResult(sandbox_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["sandboxJson"] = self.sandbox_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxEnforcementCommandAllowedParams:
+    """One slash command, as typed, to test against the enforcement-block allowlist."""
+
+    args: list[str]
+    """The command's arguments, in order. Pass an empty array for a bare command: several
+    entries in the allowlist admit the bare form and refuse every argument.
+    """
+    command_name: str
+    """The command name as the user typed it, with or without its leading slash."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxEnforcementCommandAllowedParams':
+        assert isinstance(obj, dict)
+        args = from_list(from_str, obj.get("args"))
+        command_name = from_str(obj.get("commandName"))
+        return _SandboxEnforcementCommandAllowedParams(args, command_name)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["args"] = from_list(from_str, self.args)
+        result["commandName"] = from_str(self.command_name)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
 class SandboxEnforcementStatus:
     """Managed sandbox enforcement state for a session."""
 
@@ -13459,6 +14395,54 @@ class SandboxEnforcementStatus:
         result["required"] = from_bool(self.required)
         if self.reason is not None:
             result["reason"] = from_union([from_str, from_none], self.reason)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxPickerCandidate:
+    """One file-picker suggestion offered up for the sandbox filesystem check."""
+
+    is_directory: bool
+    """Whether the suggestion is a directory. A directory the policy does not itself allow may
+    still be needed as a waypoint to an allowed subtree.
+    """
+    path: str
+    """Absolute path the suggestion would attach."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxPickerCandidate':
+        assert isinstance(obj, dict)
+        is_directory = from_bool(obj.get("isDirectory"))
+        path = from_str(obj.get("path"))
+        return _SandboxPickerCandidate(is_directory, path)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["isDirectory"] = from_bool(self.is_directory)
+        result["path"] = from_str(self.path)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxFilterPickerCandidatesResult:
+    """Per-candidate allow decisions, positionally aligned with the request."""
+
+    allowed: list[bool]
+    """One decision per candidate, in the same order. Always the same length as the request's
+    `candidates`.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxFilterPickerCandidatesResult':
+        assert isinstance(obj, dict)
+        allowed = from_list(from_bool, obj.get("allowed"))
+        return _SandboxFilterPickerCandidatesResult(allowed)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["allowed"] = from_list(from_bool, self.allowed)
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -13531,6 +14515,58 @@ class SandboxHostCapability:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxPreparePickerPolicyParams:
+    """The working directory and sandbox settings to build a file-picker policy from."""
+
+    cwd: str
+    """The session's working directory. Git discovery and grant canonicalization are resolved
+    against it.
+    """
+    sandbox: Any = None
+    """The session's resolved `sandbox` slice. Omitted, or disabled, yields no policy and every
+    candidate is kept.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxPreparePickerPolicyParams':
+        assert isinstance(obj, dict)
+        cwd = from_str(obj.get("cwd"))
+        sandbox = obj.get("sandbox")
+        return _SandboxPreparePickerPolicyParams(cwd, sandbox)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["cwd"] = from_str(self.cwd)
+        if self.sandbox is not None:
+            result["sandbox"] = self.sandbox
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxPreparePickerPolicyResult:
+    """The prepared file-picker policy, or none when the sandbox is disabled."""
+
+    sandbox_json: Any = None
+    """The prepared policy to pass back to `sandbox.filterPickerCandidates`. Absent when the
+    sandbox is disabled or absent, in which case filtering keeps every candidate.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxPreparePickerPolicyResult':
+        assert isinstance(obj, dict)
+        sandbox_json = obj.get("sandboxJson")
+        return _SandboxPreparePickerPolicyResult(sandbox_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.sandbox_json is not None:
+            result["sandboxJson"] = self.sandbox_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class SandboxProxyCACreateResult:
     """Result of creating the persistent certificate authority of the sandbox credential proxy."""
@@ -13561,6 +14597,148 @@ class SandboxProxyCAState(Enum):
     UNSUPPORTED = "unsupported"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class SandboxProxySecretGetResult:
+    """The stored sandbox proxy password, if one is present."""
+
+    value: str | None = None
+    """The stored password. Absent when no entry exists in either the keychain or the on-disk
+    fallback store.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxProxySecretGetResult':
+        assert isinstance(obj, dict)
+        value = from_union([from_str, from_none], obj.get("value"))
+        return SandboxProxySecretGetResult(value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.value is not None:
+            result["value"] = from_union([from_str, from_none], self.value)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class SandboxProxySecretLocation:
+    """Where this runtime keeps the sandbox proxy password."""
+
+    config_dir: str
+    """Absolute path of the credential store holding the sandbox proxy password. The proxy
+    password belongs to no MCP server, so it is kept in its own directory rather than in the
+    MCP secret store.
+    """
+    secret_id: str
+    """Identifier of the proxy password entry within that store. Derived from the configuration
+    directory, so two Copilot homes on one machine never share an entry. Use it to recognize
+    a `${secret:…}` reference in stored settings as this runtime's own proxy password.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxProxySecretLocation':
+        assert isinstance(obj, dict)
+        config_dir = from_str(obj.get("configDir"))
+        secret_id = from_str(obj.get("secretId"))
+        return SandboxProxySecretLocation(config_dir, secret_id)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["configDir"] = from_str(self.config_dir)
+        result["secretId"] = from_str(self.secret_id)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class SandboxProxySecretSaveRequest:
+    """The sandbox proxy password to store."""
+
+    value: str
+    """The password to store for the sandbox proxy."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxProxySecretSaveRequest':
+        assert isinstance(obj, dict)
+        value = from_str(obj.get("value"))
+        return SandboxProxySecretSaveRequest(value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["value"] = from_str(self.value)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class SandboxProxySecretSaveResult:
+    """Where the sandbox proxy password was stored."""
+
+    stored_in_keychain: bool
+    """Whether the OS keychain accepted the value. False means it was written to the on-disk
+    fallback store instead, which is still readable by `sandbox.proxySecret.get`.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxProxySecretSaveResult':
+        assert isinstance(obj, dict)
+        stored_in_keychain = from_bool(obj.get("storedInKeychain"))
+        return SandboxProxySecretSaveResult(stored_in_keychain)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["storedInKeychain"] = from_bool(self.stored_in_keychain)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxResolveFlooredConfigParams:
+    """The user's sandbox settings and the managed sandbox floor to raise them to."""
+
+    managed_sandbox: Any = None
+    """The effective managed `sandbox` slice acting as a floor. Omitted when no administrator
+    policy applies, in which case the user's own settings stand unchanged.
+    """
+    user_sandbox: Any = None
+    """The user's own `sandbox` settings slice. Omitted when the user has configured none, which
+    still yields the managed floor rather than a disabled sandbox.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxResolveFlooredConfigParams':
+        assert isinstance(obj, dict)
+        managed_sandbox = obj.get("managedSandbox")
+        user_sandbox = obj.get("userSandbox")
+        return _SandboxResolveFlooredConfigParams(managed_sandbox, user_sandbox)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.managed_sandbox is not None:
+            result["managedSandbox"] = self.managed_sandbox
+        if self.user_sandbox is not None:
+            result["userSandbox"] = self.user_sandbox
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class SandboxResolveFlooredConfigResult:
+    """The user's sandbox settings raised to the managed floor."""
+
+    sandbox_json: Any
+    """The floored sandbox config, normalized through the declared sandbox shape so only
+    declared fields in a fixed order are present.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'SandboxResolveFlooredConfigResult':
+        assert isinstance(obj, dict)
+        sandbox_json = obj.get("sandboxJson")
+        return SandboxResolveFlooredConfigResult(sandbox_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["sandboxJson"] = self.sandbox_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 class SandboxSessionChange(Enum):
     """A session-scoped sandbox transition applied while handling a slash command
 
@@ -13570,6 +14748,63 @@ class SandboxSessionChange(Enum):
     """
     DISABLED = "disabled"
     RESTORED = "restored"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxUnsupportedStartupNoticeParams:
+    """The managed sandbox policy in force, which selects which remedy the notice offers."""
+
+    enabled_by_undetermined_policy: bool | None = None
+    """True when the sandbox stayed on only because the managed policy could not be determined.
+    Distinguishes a policy that positively enforces the sandbox from one that merely failed
+    to resolve, which is the difference between telling the user to contact an administrator
+    and telling them to wait. Defaults to false.
+    """
+    managed_sandbox: Any = None
+    """The managed `sandbox` slice, when a policy supplies one. The notice treats the sandbox as
+    enforced only when this both enables it and sets `failIfUnavailable`, because a managed
+    sandbox that tolerates being unavailable still leaves the user able to turn it off.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxUnsupportedStartupNoticeParams':
+        assert isinstance(obj, dict)
+        enabled_by_undetermined_policy = from_union([from_bool, from_none], obj.get("enabledByUndeterminedPolicy"))
+        managed_sandbox = obj.get("managedSandbox")
+        return _SandboxUnsupportedStartupNoticeParams(enabled_by_undetermined_policy, managed_sandbox)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.enabled_by_undetermined_policy is not None:
+            result["enabledByUndeterminedPolicy"] = from_union([from_bool, from_none], self.enabled_by_undetermined_policy)
+        if self.managed_sandbox is not None:
+            result["managedSandbox"] = self.managed_sandbox
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxUnsupportedStartupNoticeResult:
+    """The startup warning, absent when the machine can run a sandbox."""
+
+    notice: str | None = None
+    """The user-facing warning, carrying the platform remedy and the recovery the policy in
+    force actually allows. Absent when this machine supports a sandbox, so a host can call
+    unconditionally and print only what it gets.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxUnsupportedStartupNoticeResult':
+        assert isinstance(obj, dict)
+        notice = from_union([from_str, from_none], obj.get("notice"))
+        return _SandboxUnsupportedStartupNoticeResult(notice)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.notice is not None:
+            result["notice"] = from_union([from_str, from_none], self.notice)
+        return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
@@ -16916,19 +18151,6 @@ class SettableTokenAuthInfoType(Enum):
     TOKEN = "token"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
-# Internal: this type is an internal SDK API and is not part of the public surface.
-class _SettingsEditOperation(Enum):
-    """One atomic settings mutation.
-
-    Set a scalar, add or remove a string list item, or remove the setting. The handler
-    rejects a missing or incompatible value.
-    """
-    ADD_ITEM = "add-item"
-    REMOVE = "remove"
-    REMOVE_ITEM = "remove-item"
-    SET = "set"
-
-# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class ShellCancelUserRequestedRequest:
     """User-requested shell execution cancellation handle."""
@@ -17529,6 +18751,28 @@ class SlashCommandSetPlanModelResultKind(Enum):
 
 class SlashCommandShowDialogResultKind(Enum):
     SHOW_DIALOG = "show-dialog"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+class StaffLogLevelMigrationStatus(Enum):
+    """What the one-time staff log-level migration did.
+
+    What the migration did. Only `refreshed` can have changed the persisted settings.
+    """
+    CURRENT = "current"
+    INELIGIBLE = "ineligible"
+    REFRESHED = "refreshed"
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+class StaffUpdateChannelMigrationStatus(Enum):
+    """What the one-time staff update-channel migration did.
+
+    What the migration did. Only `migrated` means the persisted settings changed.
+    """
+    COMPLETED = "completed"
+    CURRENT = "current"
+    EXCLUDED_EXPERIMENTAL = "excluded-experimental"
+    INELIGIBLE = "ineligible"
+    MIGRATED = "migrated"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 class SubagentSettingsEntryContextTier(Enum):
@@ -18778,6 +20022,51 @@ class UserSettingsValidationIssue:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsBuildRuntimeRequest:
+    """The overrides and host context to resolve effective runtime settings from."""
+
+    environment: dict[str, str]
+    """The environment to read settings-bearing variables from. Passed explicitly rather than
+    read from the server process so a host can resolve settings for an environment it is
+    about to create rather than the one it runs in.
+    """
+    platform: str
+    """The platform to apply platform-specific defaults for, in the same spelling the host's own
+    runtime reports.
+    """
+    working_directory: str
+    """The directory the settings are being resolved for. This selects the repository-scoped
+    document, so a host resolving settings for a directory other than its own process working
+    directory must pass that directory here.
+    """
+    overrides: dict[str, Any] | None = None
+    """Settings that take precedence over every document and environment layer, such as the
+    values a host derived from its own command line. Keyed by setting name, with each value
+    carried verbatim, so a host may pass keys this runtime does not recognize. Absent when
+    the host contributes no overrides of its own.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsBuildRuntimeRequest':
+        assert isinstance(obj, dict)
+        environment = from_dict(from_str, obj.get("environment"))
+        platform = from_str(obj.get("platform"))
+        working_directory = from_str(obj.get("workingDirectory"))
+        overrides = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("overrides"))
+        return _UserSettingsBuildRuntimeRequest(environment, platform, working_directory, overrides)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["environment"] = from_dict(from_str, self.environment)
+        result["platform"] = from_str(self.platform)
+        result["workingDirectory"] = from_str(self.working_directory)
+        if self.overrides is not None:
+            result["overrides"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.overrides)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class UserSettingsGetPathsRequest:
     """Selects which settings file paths to resolve."""
@@ -18866,6 +20155,142 @@ class UserSettingsGovernanceKeysResult:
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
+class UserSettingsHostContext:
+    """The filesystem and environment facts a user-settings file is resolved from. Passed
+    explicitly rather than read from the runtime's own process, so a host whose configuration
+    directory differs from its process environment resolves the file it means.
+
+    The configuration directory, home directory and environment to resolve the settings and
+    global-state documents from. A host that scopes a session to its own Copilot home must
+    pass that directory here, or the migration is evaluated against the server's own home
+    instead.
+
+    The configuration directory, home directory and environment to resolve the settings and
+    global-state documents from. A host that scopes a session to its own Copilot home must
+    pass that directory here, or the reset is evaluated against the server's own home
+    instead.
+
+    The configuration directory, home directory and environment to resolve the settings
+    document from. A host that scopes a session to its own Copilot home must pass that
+    directory here, or the server's own home is inspected instead.
+    """
+    environment: dict[str, Any]
+    """The host's environment variables. `COPILOT_HOME` is read from here, as are the variables
+    a settings hook may expand.
+    """
+    home_directory: str
+    """The user's home directory, used when neither a configuration directory nor `COPILOT_HOME`
+    is set.
+    """
+    config_dir: str | None = None
+    """The Copilot configuration directory, when the host set one. Takes precedence over
+    `COPILOT_HOME` and the home directory.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsHostContext':
+        assert isinstance(obj, dict)
+        environment = from_dict(lambda x: x, obj.get("environment"))
+        home_directory = from_str(obj.get("homeDirectory"))
+        config_dir = from_union([from_str, from_none], obj.get("configDir"))
+        return UserSettingsHostContext(environment, home_directory, config_dir)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["environment"] = from_dict(lambda x: x, self.environment)
+        result["homeDirectory"] = from_str(self.home_directory)
+        if self.config_dir is not None:
+            result["configDir"] = from_union([from_str, from_none], self.config_dir)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsLoadAndMergeRepoRequest:
+    """A repository to read settings from, and the user layer they are merged over."""
+
+    repo_root: str
+    """Absolute path of the repository root whose settings to read. When this is the user's home
+    directory, the Claude-compatible configuration is skipped, so a home-directory session
+    does not inherit a personal config as if it were repository policy.
+    """
+    user_settings: dict[str, Any]
+    """The user's own settings, keyed by setting name. The repository layer is merged over this;
+    a repository may only add to the collection settings it is allowed to influence, so a
+    user setting it does not name survives unchanged.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsLoadAndMergeRepoRequest':
+        assert isinstance(obj, dict)
+        repo_root = from_str(obj.get("repoRoot"))
+        user_settings = from_dict(lambda x: x, obj.get("userSettings"))
+        return _UserSettingsLoadAndMergeRepoRequest(repo_root, user_settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["repoRoot"] = from_str(self.repo_root)
+        result["userSettings"] = from_dict(lambda x: x, self.user_settings)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsLoadAndMergeRepoResult:
+    """The settings a consumer should act on inside a repository, together with any diagnostic
+    raised while reading the repository layer.
+    """
+    settings: dict[str, Any]
+    """The merged settings document, keyed by setting name. Equals the supplied user layer when
+    the repository declares no settings.
+    """
+    warning: str | None = None
+    """Why part of the repository document was ignored, as a single human-readable string
+    joining every diagnostic with `; `. Null when it loaded cleanly. The settings that did
+    load are still merged, so a consumer should surface this and continue rather than treat
+    it as a failure.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsLoadAndMergeRepoResult':
+        assert isinstance(obj, dict)
+        settings = from_dict(lambda x: x, obj.get("settings"))
+        warning = from_union([from_none, from_str], obj.get("warning"))
+        return _UserSettingsLoadAndMergeRepoResult(settings, warning)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["settings"] = from_dict(lambda x: x, self.settings)
+        if self.warning is not None:
+            result["warning"] = from_union([from_none, from_str], self.warning)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsLoadForConfigDirRequest:
+    """Selects the configuration directory whose user settings to read."""
+
+    config_dir: str | None = None
+    """Copilot configuration directory to read the settings document from, taking precedence
+    over the server's own `COPILOT_HOME` and default home. Omit it, or pass an empty string,
+    to read the directory the server resolved for itself.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsLoadForConfigDirRequest':
+        assert isinstance(obj, dict)
+        config_dir = from_union([from_str, from_none], obj.get("configDir"))
+        return _UserSettingsLoadForConfigDirRequest(config_dir)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.config_dir is not None:
+            result["configDir"] = from_union([from_str, from_none], self.config_dir)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
 class UserSettingsLoadForEditResult:
     """Contents of settings.json as stored, for a caller about to rewrite it."""
 
@@ -18889,6 +20314,230 @@ class UserSettingsLoadForEditResult:
         if self.settings is not None:
             result["settings"] = self.settings
         return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class UserSettingsLoadRepoRequest:
+    """Selects the repository whose checked-in settings to read."""
+
+    repo_root: str
+    """Absolute path of the repository root whose settings to read. When this is the user's home
+    directory, the Claude-compatible configuration is skipped, so a home-directory session
+    does not inherit a personal config as if it were repository policy.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsLoadRepoRequest':
+        assert isinstance(obj, dict)
+        repo_root = from_str(obj.get("repoRoot"))
+        return UserSettingsLoadRepoRequest(repo_root)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["repoRoot"] = from_str(self.repo_root)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class UserSettingsLoadRepoResult:
+    """A repository's settings as stored, together with any diagnostic raised while reading them."""
+
+    settings: dict[str, Any] | None = None
+    """The repository's settings document, keyed by setting name, with each value carried
+    verbatim. Null when the repository declares no settings.
+    """
+    warning: str | None = None
+    """Why part of the document was ignored, as a single human-readable string joining every
+    diagnostic with `; `. Null when the document loaded cleanly. The settings that did load
+    are still reported, so a consumer should surface this and continue rather than treat it
+    as a failure.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsLoadRepoResult':
+        assert isinstance(obj, dict)
+        settings = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("settings"))
+        warning = from_union([from_none, from_str], obj.get("warning"))
+        return UserSettingsLoadRepoResult(settings, warning)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.settings is not None:
+            result["settings"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.settings)
+        if self.warning is not None:
+            result["warning"] = from_union([from_none, from_str], self.warning)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class UserSettingsLoadWithWarningResult:
+    """The user's stored settings, together with any diagnostic raised while reading them."""
+
+    settings: dict[str, Any]
+    """The stored user settings document, keyed by setting name, with each value carried
+    verbatim. Empty when the file could not be read at all.
+    """
+    warning: str | None = None
+    """Why part of the document was ignored, phrased for display to the user. Null when the
+    document loaded cleanly. The settings that did load are still reported, so a consumer may
+    surface this and continue rather than treat it as a failure.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsLoadWithWarningResult':
+        assert isinstance(obj, dict)
+        settings = from_dict(lambda x: x, obj.get("settings"))
+        warning = from_union([from_none, from_str], obj.get("warning"))
+        return UserSettingsLoadWithWarningResult(settings, warning)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["settings"] = from_dict(lambda x: x, self.settings)
+        if self.warning is not None:
+            result["warning"] = from_union([from_none, from_str], self.warning)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMergeManagedAndUserParams:
+    """The managed (enterprise policy) layer and the user layer to fold together. The field
+    names carry the layer identity: nothing about a settings object identifies which layer
+    produced it, so a generic base/override pair would let a caller transpose them and
+    silently resolve the governance keys in the user's favour.
+    """
+    managed: Any = None
+    """The managed layer. Its governance keys win, and the per-entry `enabledPlugins` and
+    `extraKnownMarketplaces` control maps are stamped back from it after the union. Omitted
+    when the host is unmanaged.
+    """
+    user: Any = None
+    """The user's own settings layer. Wins on every key the managed layer does not govern.
+    Omitted when the user has no settings yet.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMergeManagedAndUserParams':
+        assert isinstance(obj, dict)
+        managed = obj.get("managed")
+        user = obj.get("user")
+        return _UserSettingsMergeManagedAndUserParams(managed, user)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.managed is not None:
+            result["managed"] = self.managed
+        if self.user is not None:
+            result["user"] = self.user
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class UserSettingsMergeManagedAndUserResult:
+    """The user layer folded over the managed layer."""
+
+    settings_json: Any
+    """The merged settings. An empty object when neither layer was supplied, so an unmanaged
+    host with no user settings governs nothing.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsMergeManagedAndUserResult':
+        assert isinstance(obj, dict)
+        settings_json = obj.get("settingsJson")
+        return UserSettingsMergeManagedAndUserResult(settings_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["settingsJson"] = self.settings_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMergeRepoValueParams:
+    """The user layer and the repository layer to fold together."""
+
+    repo_settings: Any
+    """The repository's checked-in settings layer."""
+
+    user_settings: Any
+    """The user's settings, already resolved against any managed layer."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMergeRepoValueParams':
+        assert isinstance(obj, dict)
+        repo_settings = obj.get("repoSettings")
+        user_settings = obj.get("userSettings")
+        return _UserSettingsMergeRepoValueParams(repo_settings, user_settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["repoSettings"] = self.repo_settings
+        result["userSettings"] = self.user_settings
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class UserSettingsMergeRepoValueResult:
+    """The repository layer folded into the user layer."""
+
+    settings_json: Any
+    """The merged settings, with the per-entry managed control maps re-stamped from the
+    runtime's ambient managed policy.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsMergeRepoValueResult':
+        assert isinstance(obj, dict)
+        settings_json = obj.get("settingsJson")
+        return UserSettingsMergeRepoValueResult(settings_json)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["settingsJson"] = self.settings_json
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMigrateObsoleteOnDiskRequest:
+    """Selects the configuration directory whose settings document to clean."""
+
+    config_dir: str | None = None
+    """The configuration directory holding the settings document to clean. A host that scopes a
+    session to its own Copilot home passes that directory here; omit it to clean the document
+    under the home the server resolved for itself. The home directory and environment are
+    deliberately not caller-supplied: they decide only the settings path root and the two
+    hook-parsing flags, and those describe the process doing the reading rather than the
+    caller.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMigrateObsoleteOnDiskRequest':
+        assert isinstance(obj, dict)
+        config_dir = from_union([from_str, from_none], obj.get("configDir"))
+        return _UserSettingsMigrateObsoleteOnDiskRequest(config_dir)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.config_dir is not None:
+            result["configDir"] = from_union([from_str, from_none], self.config_dir)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+class _UserSettingsMigrateObsoleteOnDiskStatus(Enum):
+    """What the cleanup did. Only `changed` rewrote the document. The cleaned settings are not
+    returned here: the document is written before this replies, so `user.settings.load` reads
+    it authoritatively.
+
+    What the one-time obsolete-settings cleanup did to the document.
+    """
+    CHANGED = "changed"
+    INVALID = "invalid"
+    MISSING = "missing"
+    UNCHANGED = "unchanged"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
@@ -18926,6 +20575,28 @@ class UserSettingsNormalizeResult:
     def to_dict(self) -> dict:
         result: dict = {}
         result["settings"] = self.settings
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+@dataclass
+class UserSettingsPathResult:
+    """The on-disk location of the user's settings document."""
+
+    path: str
+    """Absolute path to the settings file this runtime reads and writes. Normally
+    `settings.json` under the Copilot configuration directory; an extensionless legacy
+    `settings` file is reported instead when it exists and `settings.json` does not.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'UserSettingsPathResult':
+        assert isinstance(obj, dict)
+        path = from_str(obj.get("path"))
+        return UserSettingsPathResult(path)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["path"] = from_str(self.path)
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -19003,6 +20674,105 @@ class UserSettingsProblemSource:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsResetStaffModelSelectionOnceResult:
+    """The outcome of the one-time staff model-selection reset."""
+
+    cutoff: str
+    """The cutoff this reset is gated on, as an ISO-8601 timestamp. A recorded timestamp at or
+    after it means the reset is already done.
+    """
+    did_reset: bool
+    """Whether the persisted model selection was cleared. Only `true` means the settings
+    document changed and the host should adopt the returned settings.
+    """
+    reset_at: str | None = None
+    """The timestamp the host should now record, as an ISO-8601 timestamp. Carries the caller's
+    own value back unchanged when nothing was reset.
+    """
+    settings: dict[str, Any] | None = None
+    """The settings document as it stands after the reset, keyed by setting name. Present only
+    when `didReset` is true.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsResetStaffModelSelectionOnceResult':
+        assert isinstance(obj, dict)
+        cutoff = from_str(obj.get("cutoff"))
+        did_reset = from_bool(obj.get("didReset"))
+        reset_at = from_union([from_str, from_none], obj.get("resetAt"))
+        settings = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("settings"))
+        return _UserSettingsResetStaffModelSelectionOnceResult(cutoff, did_reset, reset_at, settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["cutoff"] = from_str(self.cutoff)
+        result["didReset"] = from_bool(self.did_reset)
+        if self.reset_at is not None:
+            result["resetAt"] = from_union([from_str, from_none], self.reset_at)
+        if self.settings is not None:
+            result["settings"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.settings)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsSetHookDisabledRequest:
+    """One hook to disable or re-enable."""
+
+    disabled: bool
+    """True adds the key to `disabledHooks`, false removes it."""
+
+    disable_key: str
+    """Durable content-hash key of the hook, as `hooks.loadResources` reports it."""
+
+    settings_path: str
+    """Path of the settings.json to rewrite."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsSetHookDisabledRequest':
+        assert isinstance(obj, dict)
+        disabled = from_bool(obj.get("disabled"))
+        disable_key = from_str(obj.get("disableKey"))
+        settings_path = from_str(obj.get("settingsPath"))
+        return _UserSettingsSetHookDisabledRequest(disabled, disable_key, settings_path)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["disabled"] = from_bool(self.disabled)
+        result["disableKey"] = from_str(self.disable_key)
+        result["settingsPath"] = from_str(self.settings_path)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsSetHookDisabledResult:
+    """Outcome of rewriting the `disabledHooks` setting."""
+
+    status: str
+    """`ok` when the setting was written, `invalid` when settings.json could not be parsed and
+    was left alone, `error` when the write itself failed.
+    """
+    error_message: str | None = None
+    """Why the write failed. Absent when the status is `ok`."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsSetHookDisabledResult':
+        assert isinstance(obj, dict)
+        status = from_str(obj.get("status"))
+        error_message = from_union([from_str, from_none], obj.get("errorMessage"))
+        return _UserSettingsSetHookDisabledResult(status, error_message)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["status"] = from_str(self.status)
+        if self.error_message is not None:
+            result["errorMessage"] = from_union([from_str, from_none], self.error_message)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class UserSettingsSetRequest:
     """Partial user settings to write to settings.json. Each top-level key is written
@@ -19020,6 +20790,32 @@ class UserSettingsSetRequest:
     def to_dict(self) -> dict:
         result: dict = {}
         result["settings"] = self.settings
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsUnknownKeysWarningResult:
+    """The unrecognized top-level keys found in the user settings document, already phrased for
+    display.
+    """
+    warning: str | None = None
+    """The warning to show the user, naming the unrecognized keys and the file they were found
+    in. Absent when every top-level key is recognized, and also when the document is missing
+    or could not be read, because an unknown-key list taken from a document the runtime could
+    not load would name keys that may not be there.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsUnknownKeysWarningResult':
+        assert isinstance(obj, dict)
+        warning = from_union([from_str, from_none], obj.get("warning"))
+        return _UserSettingsUnknownKeysWarningResult(warning)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.warning is not None:
+            result["warning"] = from_union([from_str, from_none], self.warning)
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -26201,6 +27997,91 @@ class LogRequest:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveBypassDisableTransitionResult:
+    """The bypass-permissions state a host should hold after the resolution, and what it must do
+    to get there.
+    """
+    suppress_runtime_allow_all: bool
+    """Whether a bypass-permissions session already running must be turned off. True only when
+    this resolution newly disables bypass mode, so a host that is already compliant is not
+    interrupted.
+    """
+    managed_identity: str | None = None
+    """The account the returned `managed` source is pinned to. Store it alongside `source`; the
+    next call needs it to decide whether an account switch lifts the disable.
+    """
+    set_disabled_state: bool | None = None
+    """The value to store in the host's own bypass-disabled flag. Omitted means leave it exactly
+    as it is, which is not the same as being told to store `false`.
+    """
+    source: _ManagedSettingsBypassDisableSource | None = None
+    """Which layer disables bypass mode after this resolution. Omitted when none does, which is
+    what a lifted disable looks like.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveBypassDisableTransitionResult':
+        assert isinstance(obj, dict)
+        suppress_runtime_allow_all = from_bool(obj.get("suppressRuntimeAllowAll"))
+        managed_identity = from_union([from_str, from_none], obj.get("managedIdentity"))
+        set_disabled_state = from_union([from_bool, from_none], obj.get("setDisabledState"))
+        source = from_union([_ManagedSettingsBypassDisableSource, from_none], obj.get("source"))
+        return _ManagedSettingsResolveBypassDisableTransitionResult(suppress_runtime_allow_all, managed_identity, set_disabled_state, source)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["suppressRuntimeAllowAll"] = from_bool(self.suppress_runtime_allow_all)
+        if self.managed_identity is not None:
+            result["managedIdentity"] = from_union([from_str, from_none], self.managed_identity)
+        if self.set_disabled_state is not None:
+            result["setDisabledState"] = from_union([from_bool, from_none], self.set_disabled_state)
+        if self.source is not None:
+            result["source"] = from_union([lambda x: to_enum(_ManagedSettingsBypassDisableSource, x), from_none], self.source)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveBypassDisableTransitionParams:
+    """The bypass-permissions state a host holds today, the account now signed in, and what the
+    managed-policy resolution said.
+    """
+    active_identity: str
+    """The account signed in now. A `managed` disable pinned to a different account is lifted."""
+
+    policy: _ManagedSettingsBypassPolicyResolution
+    """What the resolution said about bypass mode. Send `unknown` rather than omitting the field
+    when there is no verdict.
+    """
+    current_managed_identity: str | None = None
+    """The account a `managed` disable is pinned to. Omit it when the current source is not
+    `managed`; it is ignored for the other sources.
+    """
+    current_source: _ManagedSettingsBypassDisableSource | None = None
+    """Which layer currently disables bypass mode. Omit it when nothing does."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveBypassDisableTransitionParams':
+        assert isinstance(obj, dict)
+        active_identity = from_str(obj.get("activeIdentity"))
+        policy = _ManagedSettingsBypassPolicyResolution(obj.get("policy"))
+        current_managed_identity = from_union([from_str, from_none], obj.get("currentManagedIdentity"))
+        current_source = from_union([_ManagedSettingsBypassDisableSource, from_none], obj.get("currentSource"))
+        return _ManagedSettingsResolveBypassDisableTransitionParams(active_identity, policy, current_managed_identity, current_source)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["activeIdentity"] = from_str(self.active_identity)
+        result["policy"] = to_enum(_ManagedSettingsBypassPolicyResolution, self.policy)
+        if self.current_managed_identity is not None:
+            result["currentManagedIdentity"] = from_union([from_str, from_none], self.current_managed_identity)
+        if self.current_source is not None:
+            result["currentSource"] = from_union([lambda x: to_enum(_ManagedSettingsBypassDisableSource, x), from_none], self.current_source)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class ManagedSettingsComposeLayer:
     """One candidate channel; absent settings represents a channel that delivered no document."""
@@ -26299,6 +28180,500 @@ class ManagedSettingsMeta:
             result["effortLevel"] = from_union([lambda x: to_class(ManagedSettingMeta, x), from_none], self.effort_level)
         if self.model is not None:
             result["model"] = from_union([lambda x: to_class(ManagedSettingMeta, x), from_none], self.model)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsLoadRemoteControlParams:
+    """Inputs describing the host and account whose managed remote-control policy should be
+    resolved. Mirrors `managedSettings.ingest`, and deliberately carries no retention
+    decision: reading this gate never becomes this runtime process's startup policy.
+    """
+    environment: Any
+    """The host's environment variables, read for cache location and policy overrides."""
+
+    home_directory: str
+    """The host's home directory, used to resolve cache and managed-file locations."""
+
+    platform: str
+    """The host's platform, in Node's `process.platform` spelling, used to locate
+    platform-specific cache and policy paths.
+    """
+    user_agent: str
+    """User agent to send with the policy fetch."""
+
+    auth_info: Any = None
+    """The authenticated identity to resolve policy for. Omitted before sign-in, in which case
+    no server layer is fetched.
+    """
+    client_name: str | None = None
+    """Name of the embedding client, reported to the managed-settings service as `client_id` so
+    it can refuse to deliver a policy this client is too old to enforce. That refusal is
+    exactly what turns into an explicit `disabled` below, so a host that omits this field
+    forfeits the protection.
+    """
+    device_response: Any = None
+    """A device layer supplied by the host instead of discovered from the machine. Pair it with
+    `hasDeviceResponse` so an explicit absence is distinguishable from an omitted override.
+    """
+    has_device_response: bool | None = None
+    """Whether `deviceResponse` is an override at all. True with a null `deviceResponse` asserts
+    the device layer is empty; false discovers it from the machine.
+    """
+    policy_helper_enabled: bool | None = None
+    """Whether a configured platform policy helper may be run to produce an enforced helper
+    layer.
+    """
+    policy_helper_reason: _ManagedSettingsPolicyHelperReason | None = None
+    """The policy-helper invocation reason. Defaults to sessionStart."""
+
+    self_fetch: bool | None = None
+    """Whether to run ingestion. Omit or set false to return an empty result without discovering
+    or fetching policy.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsLoadRemoteControlParams':
+        assert isinstance(obj, dict)
+        environment = obj.get("environment")
+        home_directory = from_str(obj.get("homeDirectory"))
+        platform = from_str(obj.get("platform"))
+        user_agent = from_str(obj.get("userAgent"))
+        auth_info = obj.get("authInfo")
+        client_name = from_union([from_str, from_none], obj.get("clientName"))
+        device_response = obj.get("deviceResponse")
+        has_device_response = from_union([from_bool, from_none], obj.get("hasDeviceResponse"))
+        policy_helper_enabled = from_union([from_bool, from_none], obj.get("policyHelperEnabled"))
+        policy_helper_reason = from_union([_ManagedSettingsPolicyHelperReason, from_none], obj.get("policyHelperReason"))
+        self_fetch = from_union([from_bool, from_none], obj.get("selfFetch"))
+        return _ManagedSettingsLoadRemoteControlParams(environment, home_directory, platform, user_agent, auth_info, client_name, device_response, has_device_response, policy_helper_enabled, policy_helper_reason, self_fetch)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["environment"] = self.environment
+        result["homeDirectory"] = from_str(self.home_directory)
+        result["platform"] = from_str(self.platform)
+        result["userAgent"] = from_str(self.user_agent)
+        if self.auth_info is not None:
+            result["authInfo"] = self.auth_info
+        if self.client_name is not None:
+            result["clientName"] = from_union([from_str, from_none], self.client_name)
+        if self.device_response is not None:
+            result["deviceResponse"] = self.device_response
+        if self.has_device_response is not None:
+            result["hasDeviceResponse"] = from_union([from_bool, from_none], self.has_device_response)
+        if self.policy_helper_enabled is not None:
+            result["policyHelperEnabled"] = from_union([from_bool, from_none], self.policy_helper_enabled)
+        if self.policy_helper_reason is not None:
+            result["policyHelperReason"] = from_union([lambda x: to_enum(_ManagedSettingsPolicyHelperReason, x), from_none], self.policy_helper_reason)
+        if self.self_fetch is not None:
+            result["selfFetch"] = from_union([from_bool, from_none], self.self_fetch)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsIngestParams:
+    """Inputs describing the host and account an ingestion should resolve managed policy for."""
+
+    environment: Any
+    """The host's environment variables, read for cache location and policy overrides. Supplied
+    by the host rather than read from the runtime process so a command that selected its own
+    configuration home is honored.
+    """
+    home_directory: str
+    """The host's home directory, used to resolve cache and managed-file locations."""
+
+    platform: str
+    """The host's platform, in Node's `process.platform` spelling, used to locate
+    platform-specific cache and policy paths.
+    """
+    user_agent: str
+    """User agent to send with the policy fetch."""
+
+    auth_info: Any = None
+    """The authenticated identity to resolve policy for. Omitted before sign-in, in which case
+    no server layer is fetched.
+    """
+    bypass_cache_read: bool | None = None
+    """Whether to ignore a cached server policy when reading, forcing the resolution to come
+    from a live fetch.
+    """
+    client_name: str | None = None
+    """Name of the embedding client, reported to the managed-settings service as `client_id` so
+    it can refuse to deliver a policy this client is too old to enforce. Omit it and the
+    runtime reports a generic identity; the runtime version sent alongside is the gate that
+    actually matters.
+    """
+    device_response: Any = None
+    """A device layer supplied by the host instead of discovered from the machine. Pair it with
+    `hasDeviceResponse` so an explicit absence is distinguishable from an omitted override.
+    """
+    has_device_response: bool | None = None
+    """Whether `deviceResponse` is an override at all. True with a null `deviceResponse` asserts
+    the device layer is empty; false discovers it from the machine.
+    """
+    policy_helper_enabled: bool | None = None
+    """Whether a configured platform policy helper may be run to produce an enforced helper
+    layer.
+    """
+    policy_helper_reason: _ManagedSettingsPolicyHelperReason | None = None
+    """The policy-helper invocation reason. Defaults to sessionStart."""
+
+    policy_helper_working_directory: str | None = None
+    """Directory the policy helper runs in when this ingestion is not owned by a registered
+    session. A host resolving policy before its session exists must pass this, or a
+    directory-sensitive helper judges the wrong repository.
+    """
+    self_fetch: bool | None = None
+    """Whether to run ingestion. Omit or set false to return an empty result without discovering
+    or fetching policy.
+    """
+    server_policy_cache_mode: _ManagedSettingsServerPolicyCacheMode | None = None
+    """How this ingestion may use the on-disk server-policy cache. Defaults to the runtime's own
+    policy when omitted.
+    """
+    session_id: str | None = None
+    """The session whose credential store and working directory the policy helper should use.
+    Omit it when no session exists yet and the process-wide store applies.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsIngestParams':
+        assert isinstance(obj, dict)
+        environment = obj.get("environment")
+        home_directory = from_str(obj.get("homeDirectory"))
+        platform = from_str(obj.get("platform"))
+        user_agent = from_str(obj.get("userAgent"))
+        auth_info = obj.get("authInfo")
+        bypass_cache_read = from_union([from_bool, from_none], obj.get("bypassCacheRead"))
+        client_name = from_union([from_str, from_none], obj.get("clientName"))
+        device_response = obj.get("deviceResponse")
+        has_device_response = from_union([from_bool, from_none], obj.get("hasDeviceResponse"))
+        policy_helper_enabled = from_union([from_bool, from_none], obj.get("policyHelperEnabled"))
+        policy_helper_reason = from_union([_ManagedSettingsPolicyHelperReason, from_none], obj.get("policyHelperReason"))
+        policy_helper_working_directory = from_union([from_str, from_none], obj.get("policyHelperWorkingDirectory"))
+        self_fetch = from_union([from_bool, from_none], obj.get("selfFetch"))
+        server_policy_cache_mode = from_union([_ManagedSettingsServerPolicyCacheMode, from_none], obj.get("serverPolicyCacheMode"))
+        session_id = from_union([from_str, from_none], obj.get("sessionId"))
+        return _ManagedSettingsIngestParams(environment, home_directory, platform, user_agent, auth_info, bypass_cache_read, client_name, device_response, has_device_response, policy_helper_enabled, policy_helper_reason, policy_helper_working_directory, self_fetch, server_policy_cache_mode, session_id)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["environment"] = self.environment
+        result["homeDirectory"] = from_str(self.home_directory)
+        result["platform"] = from_str(self.platform)
+        result["userAgent"] = from_str(self.user_agent)
+        if self.auth_info is not None:
+            result["authInfo"] = self.auth_info
+        if self.bypass_cache_read is not None:
+            result["bypassCacheRead"] = from_union([from_bool, from_none], self.bypass_cache_read)
+        if self.client_name is not None:
+            result["clientName"] = from_union([from_str, from_none], self.client_name)
+        if self.device_response is not None:
+            result["deviceResponse"] = self.device_response
+        if self.has_device_response is not None:
+            result["hasDeviceResponse"] = from_union([from_bool, from_none], self.has_device_response)
+        if self.policy_helper_enabled is not None:
+            result["policyHelperEnabled"] = from_union([from_bool, from_none], self.policy_helper_enabled)
+        if self.policy_helper_reason is not None:
+            result["policyHelperReason"] = from_union([lambda x: to_enum(_ManagedSettingsPolicyHelperReason, x), from_none], self.policy_helper_reason)
+        if self.policy_helper_working_directory is not None:
+            result["policyHelperWorkingDirectory"] = from_union([from_str, from_none], self.policy_helper_working_directory)
+        if self.self_fetch is not None:
+            result["selfFetch"] = from_union([from_bool, from_none], self.self_fetch)
+        if self.server_policy_cache_mode is not None:
+            result["serverPolicyCacheMode"] = from_union([lambda x: to_enum(_ManagedSettingsServerPolicyCacheMode, x), from_none], self.server_policy_cache_mode)
+        if self.session_id is not None:
+            result["sessionId"] = from_union([from_str, from_none], self.session_id)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveStartupPolicyParams:
+    """Inputs describing the host and account a startup policy resolution should run for.
+    Mirrors `managedSettings.ingest`, and adds the decision of whether the resolved policy is
+    retained for this runtime process.
+    """
+    environment: Any
+    """The host's environment variables, read for cache location, policy overrides, and the
+    variables that would make a membership snapshot forgeable.
+    """
+    home_directory: str
+    """The host's home directory, used to resolve cache and managed-file locations."""
+
+    platform: str
+    """The host's platform, in Node's `process.platform` spelling, used to locate
+    platform-specific cache and policy paths.
+    """
+    retain_and_apply: bool
+    """Whether to retain the resolved policy as this runtime process's startup policy, so later
+    work in the process enforces it. Set false to resolve without side effects, which is what
+    a protocol host wants before session creation: its sessions apply the complete policy
+    through the normal lifecycle, and retaining here would let a readiness credential affect
+    unrelated sessions. The returned verdict is identical either way — this decides only
+    whether the process keeps it.
+    """
+    user_agent: str
+    """User agent to send with the policy fetch."""
+
+    auth_info: Any = None
+    """The authenticated identity to resolve policy for. Omitted before sign-in, in which case
+    no server layer is fetched and the sign-in pin is evaluated against no credential.
+    """
+    bypass_cache_read: bool | None = None
+    """Whether to ignore a cached server policy when reading, forcing the resolution to come
+    from a live fetch.
+    """
+    client_name: str | None = None
+    """Name of the embedding client, reported to the managed-settings service as `client_id` so
+    it can refuse to deliver a policy this client is too old to enforce.
+    """
+    device_response: Any = None
+    """A device layer supplied by the host instead of discovered from the machine. Pair it with
+    `hasDeviceResponse` so an explicit absence is distinguishable from an omitted override.
+    """
+    has_device_response: bool | None = None
+    """Whether `deviceResponse` is an override at all. True with a null `deviceResponse` asserts
+    the device layer is empty; false discovers it from the machine.
+    """
+    policy_helper_enabled: bool | None = None
+    """Whether a configured platform policy helper may be run to produce an enforced helper
+    layer.
+    """
+    policy_helper_reason: _ManagedSettingsPolicyHelperReason | None = None
+    """The policy-helper invocation reason. Defaults to sessionStart."""
+
+    policy_helper_working_directory: str | None = None
+    """Directory the policy helper runs in when this resolution is not owned by a registered
+    session. A host resolving policy before its session exists must pass this, or a
+    directory-sensitive helper judges the wrong repository.
+    """
+    self_fetch: bool | None = None
+    """Whether to run ingestion. Omit or set false to return an empty result without discovering
+    or fetching policy.
+    """
+    server_policy_cache_mode: _ManagedSettingsServerPolicyCacheMode | None = None
+    """How this resolution may use the on-disk server-policy cache. Defaults to the runtime's
+    own policy when omitted. Rejected when combined with `bypassCacheRead`, because the two
+    express the same decision and accepting both would leave the caller unsure which one the
+    runtime honored.
+    """
+    session_id: str | None = None
+    """The session whose credential store, working directory and client kind the resolution
+    should use. Omit it when no session exists yet and the process-wide store applies. A
+    resolution whose session names a credential other than `authInfo` is returned but not
+    retained, so a stale sign-in cannot apply policy for an account that has already been
+    switched away from.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveStartupPolicyParams':
+        assert isinstance(obj, dict)
+        environment = obj.get("environment")
+        home_directory = from_str(obj.get("homeDirectory"))
+        platform = from_str(obj.get("platform"))
+        retain_and_apply = from_bool(obj.get("retainAndApply"))
+        user_agent = from_str(obj.get("userAgent"))
+        auth_info = obj.get("authInfo")
+        bypass_cache_read = from_union([from_bool, from_none], obj.get("bypassCacheRead"))
+        client_name = from_union([from_str, from_none], obj.get("clientName"))
+        device_response = obj.get("deviceResponse")
+        has_device_response = from_union([from_bool, from_none], obj.get("hasDeviceResponse"))
+        policy_helper_enabled = from_union([from_bool, from_none], obj.get("policyHelperEnabled"))
+        policy_helper_reason = from_union([_ManagedSettingsPolicyHelperReason, from_none], obj.get("policyHelperReason"))
+        policy_helper_working_directory = from_union([from_str, from_none], obj.get("policyHelperWorkingDirectory"))
+        self_fetch = from_union([from_bool, from_none], obj.get("selfFetch"))
+        server_policy_cache_mode = from_union([_ManagedSettingsServerPolicyCacheMode, from_none], obj.get("serverPolicyCacheMode"))
+        session_id = from_union([from_str, from_none], obj.get("sessionId"))
+        return _ManagedSettingsResolveStartupPolicyParams(environment, home_directory, platform, retain_and_apply, user_agent, auth_info, bypass_cache_read, client_name, device_response, has_device_response, policy_helper_enabled, policy_helper_reason, policy_helper_working_directory, self_fetch, server_policy_cache_mode, session_id)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["environment"] = self.environment
+        result["homeDirectory"] = from_str(self.home_directory)
+        result["platform"] = from_str(self.platform)
+        result["retainAndApply"] = from_bool(self.retain_and_apply)
+        result["userAgent"] = from_str(self.user_agent)
+        if self.auth_info is not None:
+            result["authInfo"] = self.auth_info
+        if self.bypass_cache_read is not None:
+            result["bypassCacheRead"] = from_union([from_bool, from_none], self.bypass_cache_read)
+        if self.client_name is not None:
+            result["clientName"] = from_union([from_str, from_none], self.client_name)
+        if self.device_response is not None:
+            result["deviceResponse"] = self.device_response
+        if self.has_device_response is not None:
+            result["hasDeviceResponse"] = from_union([from_bool, from_none], self.has_device_response)
+        if self.policy_helper_enabled is not None:
+            result["policyHelperEnabled"] = from_union([from_bool, from_none], self.policy_helper_enabled)
+        if self.policy_helper_reason is not None:
+            result["policyHelperReason"] = from_union([lambda x: to_enum(_ManagedSettingsPolicyHelperReason, x), from_none], self.policy_helper_reason)
+        if self.policy_helper_working_directory is not None:
+            result["policyHelperWorkingDirectory"] = from_union([from_str, from_none], self.policy_helper_working_directory)
+        if self.self_fetch is not None:
+            result["selfFetch"] = from_union([from_bool, from_none], self.self_fetch)
+        if self.server_policy_cache_mode is not None:
+            result["serverPolicyCacheMode"] = from_union([lambda x: to_enum(_ManagedSettingsServerPolicyCacheMode, x), from_none], self.server_policy_cache_mode)
+        if self.session_id is not None:
+            result["sessionId"] = from_union([from_str, from_none], self.session_id)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsLogMessage:
+    """One diagnostic emitted while ingesting managed settings. Returned rather than logged by
+    the runtime so the host decides where ingestion diagnostics go, which matters because an
+    ingestion runs before a session exists to carry a log sink.
+    """
+    level: _ManagedSettingsLogLevel
+    """Severity of this diagnostic."""
+
+    message: str
+    """Human-readable diagnostic text."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsLogMessage':
+        assert isinstance(obj, dict)
+        level = _ManagedSettingsLogLevel(obj.get("level"))
+        message = from_str(obj.get("message"))
+        return _ManagedSettingsLogMessage(level, message)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["level"] = to_enum(_ManagedSettingsLogLevel, self.level)
+        result["message"] = from_str(self.message)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsResolveStartupPolicyResult:
+    """The startup policy a resolution composed, the per-layer outcome flags a host needs to
+    decide how much to trust it, and the enterprise sign-in verdict for the credential it ran
+    against. The flags are reported rather than folded into the settings because a host must
+    distinguish an unmanaged device from a managed device whose policy could not be
+    confirmed, and apply its fail-closed gates in the second case.
+    """
+    device_load_failed: bool
+    """The device layer could not be read, so it is unconfirmed rather than known-absent."""
+
+    force_login_orgs: _ForceLoginOrgsDecision
+    """The enterprise sign-in verdict for the credential this resolution ran against, evaluated
+    over the effective policy so a server-delivered pin is honored alongside a device one.
+    Computed on every resolution, including one that was not retained, so a host that
+    declines to apply policy still cannot proceed past a pin.
+    """
+    managed_policy_present: bool
+    """A managed policy is known to apply to this host, from a discovered source or a resolved
+    document.
+    """
+    permission_policy_undetermined: bool
+    """The permissions layer specifically could not be confirmed, so permission gates apply
+    their fail-closed posture.
+    """
+    policy_helper_load_failed: bool
+    """The policy helper was configured but could not be run, or its output could not be read."""
+
+    policy_undetermined: bool
+    """Some layer of the policy could not be confirmed, so its absence must not be read as
+    permission. Folds in a failed server fetch as well as an unreadable device layer.
+    """
+    sandbox_enabled_by_undetermined_policy: bool
+    """The sandbox was enabled because policy could not be confirmed rather than because an
+    administrator asked for it. Lets a host explain a sandbox the user did not configure.
+    """
+    server_fetch_failed: bool
+    """The server fetch failed and no cached entry stood in for it, so the server layer is
+    unconfirmed and fail-closed gates apply.
+    """
+    server_resolution: _ManagedSettingsServerPolicyResolution
+    """How the current runtime resolved the server layer."""
+
+    telemetry: Any
+    """Telemetry describing which layers answered and how, for the host to report alongside its
+    own startup events.
+    """
+    warnings: list[str]
+    """Warnings raised while resolving, in the order they occurred."""
+
+    client_update_requested: str | None = None
+    """Advisory minimum client version from a successful server response."""
+
+    client_update_required: str | None = None
+    """The server refused to deliver a policy because this client is too old to enforce it,
+    carrying the user-facing sentence describing the refusal. No retry will help; the remedy
+    is a client update.
+    """
+    device_response: Any = None
+    """The device layer discovered from the machine, when one exists."""
+
+    device_sandbox_floor: Any = None
+    """The sandbox floor contributed by the device layer."""
+
+    policy_helper_response: Any = None
+    """The layer produced by the platform policy helper, when one ran."""
+
+    sandbox_floor: Any = None
+    """The effective sandbox floor composed across every layer, which a host must apply rather
+    than its own default.
+    """
+    server_response: Any = None
+    """The account's server-delivered policy, when one was resolved."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsResolveStartupPolicyResult':
+        assert isinstance(obj, dict)
+        device_load_failed = from_bool(obj.get("deviceLoadFailed"))
+        force_login_orgs = _ForceLoginOrgsDecision.from_dict(obj.get("forceLoginOrgs"))
+        managed_policy_present = from_bool(obj.get("managedPolicyPresent"))
+        permission_policy_undetermined = from_bool(obj.get("permissionPolicyUndetermined"))
+        policy_helper_load_failed = from_bool(obj.get("policyHelperLoadFailed"))
+        policy_undetermined = from_bool(obj.get("policyUndetermined"))
+        sandbox_enabled_by_undetermined_policy = from_bool(obj.get("sandboxEnabledByUndeterminedPolicy"))
+        server_fetch_failed = from_bool(obj.get("serverFetchFailed"))
+        server_resolution = _ManagedSettingsServerPolicyResolution(obj.get("serverResolution"))
+        telemetry = obj.get("telemetry")
+        warnings = from_list(from_str, obj.get("warnings"))
+        client_update_requested = from_union([from_str, from_none], obj.get("clientUpdateRequested"))
+        client_update_required = from_union([from_str, from_none], obj.get("clientUpdateRequired"))
+        device_response = obj.get("deviceResponse")
+        device_sandbox_floor = obj.get("deviceSandboxFloor")
+        policy_helper_response = obj.get("policyHelperResponse")
+        sandbox_floor = obj.get("sandboxFloor")
+        server_response = obj.get("serverResponse")
+        return _ManagedSettingsResolveStartupPolicyResult(device_load_failed, force_login_orgs, managed_policy_present, permission_policy_undetermined, policy_helper_load_failed, policy_undetermined, sandbox_enabled_by_undetermined_policy, server_fetch_failed, server_resolution, telemetry, warnings, client_update_requested, client_update_required, device_response, device_sandbox_floor, policy_helper_response, sandbox_floor, server_response)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["deviceLoadFailed"] = from_bool(self.device_load_failed)
+        result["forceLoginOrgs"] = to_class(_ForceLoginOrgsDecision, self.force_login_orgs)
+        result["managedPolicyPresent"] = from_bool(self.managed_policy_present)
+        result["permissionPolicyUndetermined"] = from_bool(self.permission_policy_undetermined)
+        result["policyHelperLoadFailed"] = from_bool(self.policy_helper_load_failed)
+        result["policyUndetermined"] = from_bool(self.policy_undetermined)
+        result["sandboxEnabledByUndeterminedPolicy"] = from_bool(self.sandbox_enabled_by_undetermined_policy)
+        result["serverFetchFailed"] = from_bool(self.server_fetch_failed)
+        result["serverResolution"] = to_enum(_ManagedSettingsServerPolicyResolution, self.server_resolution)
+        result["telemetry"] = self.telemetry
+        result["warnings"] = from_list(from_str, self.warnings)
+        if self.client_update_requested is not None:
+            result["clientUpdateRequested"] = from_union([from_str, from_none], self.client_update_requested)
+        if self.client_update_required is not None:
+            result["clientUpdateRequired"] = from_union([from_str, from_none], self.client_update_required)
+        if self.device_response is not None:
+            result["deviceResponse"] = self.device_response
+        if self.device_sandbox_floor is not None:
+            result["deviceSandboxFloor"] = self.device_sandbox_floor
+        if self.policy_helper_response is not None:
+            result["policyHelperResponse"] = self.policy_helper_response
+        if self.sandbox_floor is not None:
+            result["sandboxFloor"] = self.sandbox_floor
+        if self.server_response is not None:
+            result["serverResponse"] = self.server_response
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -31114,6 +33489,91 @@ class RemoteEnableRequest:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsEditRequest:
+    """One atomic edit of a canonical setting in settings.json."""
+
+    canonical_path: list[str]
+    """Nonempty canonical path segments of the setting to edit, starting with its top-level key."""
+
+    operation: _SettingsEditOperation
+    """Set a scalar, add or remove a string list item, or remove the setting. The handler
+    rejects a missing or incompatible value.
+    """
+    config_dir: str | None = None
+    """Configuration directory to edit. Omitted or empty resolves the server's own home, as in
+    `user.settings.loadForConfigDir`.
+    """
+    value: Any = UNSET_SENTINEL
+    """Required boolean, string or number for set, required string for add-item and remove-item,
+    and forbidden for remove. The runtime rejects all other JSON values.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsEditRequest':
+        assert isinstance(obj, dict)
+        canonical_path = from_list(from_str, obj.get("canonicalPath"))
+        operation = _SettingsEditOperation(obj.get("operation"))
+        config_dir = from_union([from_str, from_none], obj.get("configDir"))
+        value = obj["value"] if "value" in obj else UNSET_SENTINEL
+        return _UserSettingsEditRequest(canonical_path, operation, config_dir, value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["canonicalPath"] = from_list(from_str, self.canonical_path)
+        result["operation"] = to_enum(_SettingsEditOperation, self.operation)
+        if self.config_dir is not None:
+            result["configDir"] = from_union([from_str, from_none], self.config_dir)
+        if self.value is not UNSET_SENTINEL:
+            result["value"] = self.value
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _RepoSettingsEditRequest:
+    """One atomic edit of an allowed top-level repository setting."""
+
+    key: str
+    """One canonical top-level repository setting that the allowlist permits."""
+
+    operation: _SettingsEditOperation
+    """Set a scalar, add or remove a string list item, or remove the setting. The handler
+    rejects a missing or incompatible value.
+    """
+    repo_root: str
+    """Absolute path of the repository root."""
+
+    scope: _RepoSettingsEditScope
+    """Shared or local repository settings file."""
+
+    value: Any = None
+    """Required boolean, string or number for set, required string for add-item and remove-item,
+    and forbidden for remove. The runtime rejects all other JSON values.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_RepoSettingsEditRequest':
+        assert isinstance(obj, dict)
+        key = from_str(obj.get("key"))
+        operation = _SettingsEditOperation(obj.get("operation"))
+        repo_root = from_str(obj.get("repoRoot"))
+        scope = _RepoSettingsEditScope(obj.get("scope"))
+        value = obj.get("value")
+        return _RepoSettingsEditRequest(key, operation, repo_root, scope, value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["key"] = from_str(self.key)
+        result["operation"] = to_enum(_SettingsEditOperation, self.operation)
+        result["repoRoot"] = from_str(self.repo_root)
+        result["scope"] = to_enum(_RepoSettingsEditScope, self.scope)
+        if self.value is not None:
+            result["value"] = self.value
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class ResponseFormat:
     """Provider-native structured output format. JSON Schema is forwarded without rewriting or
@@ -31275,6 +33735,37 @@ class SandboxCredentialSuggestionsResult:
     def to_dict(self) -> dict:
         result: dict = {}
         result["suggestions"] = from_list(lambda x: to_class(SandboxCredentialSuggestion, x), self.suggestions)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _SandboxFilterPickerCandidatesParams:
+    """A batch of file-picker candidates to check against a prepared policy."""
+
+    candidates: list[_SandboxPickerCandidate]
+    """The candidates to check, in the order the answers are returned."""
+
+    cwd: str
+    """The session's working directory, matching the one the policy was prepared from."""
+
+    sandbox: Any = None
+    """The policy returned by `sandbox.preparePickerPolicy`. Omitted keeps every candidate."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_SandboxFilterPickerCandidatesParams':
+        assert isinstance(obj, dict)
+        candidates = from_list(_SandboxPickerCandidate.from_dict, obj.get("candidates"))
+        cwd = from_str(obj.get("cwd"))
+        sandbox = obj.get("sandbox")
+        return _SandboxFilterPickerCandidatesParams(candidates, cwd, sandbox)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["candidates"] = from_list(lambda x: to_class(_SandboxPickerCandidate, x), self.candidates)
+        result["cwd"] = from_str(self.cwd)
+        if self.sandbox is not None:
+            result["sandbox"] = self.sandbox
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -32452,47 +34943,6 @@ class SessionsOpenAttach:
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
-# Internal: this type is an internal SDK API and is not part of the public surface.
-@dataclass
-class _UserSettingsEditRequest:
-    """One atomic edit of a canonical setting in settings.json."""
-
-    canonical_path: list[str]
-    """Nonempty canonical path segments of the setting to edit, starting with its top-level key."""
-
-    operation: _SettingsEditOperation
-    """Set a scalar, add or remove a string list item, or remove the setting. The handler
-    rejects a missing or incompatible value.
-    """
-    config_dir: str | None = None
-    """Configuration directory to edit. Omitted or empty resolves the server's own home, as in
-    `user.settings.loadForConfigDir`.
-    """
-    value: Any = UNSET_SENTINEL
-    """Required boolean, string or number for set, required string for add-item and remove-item,
-    and forbidden for remove. The runtime rejects all other JSON values.
-    """
-
-    @staticmethod
-    def from_dict(obj: Any) -> '_UserSettingsEditRequest':
-        assert isinstance(obj, dict)
-        canonical_path = from_list(from_str, obj.get("canonicalPath"))
-        operation = _SettingsEditOperation(obj.get("operation"))
-        config_dir = from_union([from_str, from_none], obj.get("configDir"))
-        value = obj["value"] if "value" in obj else UNSET_SENTINEL
-        return _UserSettingsEditRequest(canonical_path, operation, config_dir, value)
-
-    def to_dict(self) -> dict:
-        result: dict = {}
-        result["canonicalPath"] = from_list(from_str, self.canonical_path)
-        result["operation"] = to_enum(_SettingsEditOperation, self.operation)
-        if self.config_dir is not None:
-            result["configDir"] = from_union([from_str, from_none], self.config_dir)
-        if self.value is not UNSET_SENTINEL:
-            result["value"] = self.value
-        return result
-
-# Experimental: this type is part of an experimental API and may change or be removed.
 @dataclass
 class ShellKillRequest:
     """Identifier of a process previously returned by "shell.exec" and the signal to send."""
@@ -33215,6 +35665,69 @@ class SlashCommandSetPlanModelResult:
             result["planModel"] = from_union([from_str, from_none], self.plan_model)
         if self.runtime_settings_changed is not None:
             result["runtimeSettingsChanged"] = from_union([from_bool, from_none], self.runtime_settings_changed)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMigrateStaffLogLevelOnceResult:
+    """The outcome of the one-time staff log-level migration."""
+
+    status: StaffLogLevelMigrationStatus
+    """What the migration did. Only `refreshed` can have changed the persisted settings."""
+
+    completed_at: str | None = None
+    """When the migration was recorded as done, as an ISO-8601 timestamp. Absent only for
+    `ineligible`, which records nothing.
+    """
+    settings: dict[str, Any] | None = None
+    """The settings document as it stands after the migration, keyed by setting name. Present
+    only for `refreshed`, and only when the document could be re-read cleanly.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMigrateStaffLogLevelOnceResult':
+        assert isinstance(obj, dict)
+        status = StaffLogLevelMigrationStatus(obj.get("status"))
+        completed_at = from_union([from_str, from_none], obj.get("completedAt"))
+        settings = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("settings"))
+        return _UserSettingsMigrateStaffLogLevelOnceResult(status, completed_at, settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["status"] = to_enum(StaffLogLevelMigrationStatus, self.status)
+        if self.completed_at is not None:
+            result["completedAt"] = from_union([from_str, from_none], self.completed_at)
+        if self.settings is not None:
+            result["settings"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.settings)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMigrateStaffUpdateChannelOnceResult:
+    """The outcome of the one-time staff update-channel migration."""
+
+    status: StaffUpdateChannelMigrationStatus
+    """What the migration did. Only `migrated` means the persisted settings changed."""
+
+    completed_at: str | None = None
+    """When the migration was recorded as done, as an ISO-8601 timestamp. Absent only for
+    `ineligible`, which records nothing.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMigrateStaffUpdateChannelOnceResult':
+        assert isinstance(obj, dict)
+        status = StaffUpdateChannelMigrationStatus(obj.get("status"))
+        completed_at = from_union([from_str, from_none], obj.get("completedAt"))
+        return _UserSettingsMigrateStaffUpdateChannelOnceResult(status, completed_at)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["status"] = to_enum(StaffUpdateChannelMigrationStatus, self.status)
+        if self.completed_at is not None:
+            result["completedAt"] = from_union([from_str, from_none], self.completed_at)
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -34197,6 +36710,124 @@ class UserSettingsValidateResult:
         result["ok"] = from_bool(self.ok)
         if self.issues is not None:
             result["issues"] = from_union([lambda x: from_list(lambda x: to_class(UserSettingsValidationIssue, x), x), from_none], self.issues)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMigrateStaffLogLevelOnceRequest:
+    """Selects the configuration directory to run the one-time staff log-level migration
+    against, and supplies the caller's record of whether it has already run.
+    """
+    context: UserSettingsHostContext
+    """The configuration directory, home directory and environment to resolve the settings and
+    global-state documents from. A host that scopes a session to its own Copilot home must
+    pass that directory here, or the migration is evaluated against the server's own home
+    instead.
+    """
+    cached_completed_at: str | None = None
+    """When the caller last recorded this migration, as an ISO-8601 timestamp. Supplying it lets
+    the runtime answer `current` without re-running the evaluation.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMigrateStaffLogLevelOnceRequest':
+        assert isinstance(obj, dict)
+        context = UserSettingsHostContext.from_dict(obj.get("context"))
+        cached_completed_at = from_union([from_str, from_none], obj.get("cachedCompletedAt"))
+        return _UserSettingsMigrateStaffLogLevelOnceRequest(context, cached_completed_at)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["context"] = to_class(UserSettingsHostContext, self.context)
+        if self.cached_completed_at is not None:
+            result["cachedCompletedAt"] = from_union([from_str, from_none], self.cached_completed_at)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsResetStaffModelSelectionOnceRequest:
+    """Selects the configuration directory to run the one-time staff model-selection reset
+    against, and supplies the caller's record of whether it has already run.
+    """
+    context: UserSettingsHostContext
+    """The configuration directory, home directory and environment to resolve the settings and
+    global-state documents from. A host that scopes a session to its own Copilot home must
+    pass that directory here, or the reset is evaluated against the server's own home instead.
+    """
+    staff: bool | None = None
+    """Whether the signed-in account is a staff account. The reset applies only to staff, so
+    anything other than `true` returns `didReset: false` without touching the settings
+    document.
+    """
+    staff_model_reset_at: str | None = None
+    """When the caller last recorded this reset, as an ISO-8601 timestamp. A timestamp at or
+    after the cutoff means the reset already ran and is returned unchanged.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsResetStaffModelSelectionOnceRequest':
+        assert isinstance(obj, dict)
+        context = UserSettingsHostContext.from_dict(obj.get("context"))
+        staff = from_union([from_bool, from_none], obj.get("staff"))
+        staff_model_reset_at = from_union([from_str, from_none], obj.get("staffModelResetAt"))
+        return _UserSettingsResetStaffModelSelectionOnceRequest(context, staff, staff_model_reset_at)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["context"] = to_class(UserSettingsHostContext, self.context)
+        if self.staff is not None:
+            result["staff"] = from_union([from_bool, from_none], self.staff)
+        if self.staff_model_reset_at is not None:
+            result["staffModelResetAt"] = from_union([from_str, from_none], self.staff_model_reset_at)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsUnknownKeysWarningRequest:
+    """Selects the configuration directory whose user settings document should be inspected for
+    unrecognized top-level keys.
+    """
+    context: UserSettingsHostContext
+    """The configuration directory, home directory and environment to resolve the settings
+    document from. A host that scopes a session to its own Copilot home must pass that
+    directory here, or the server's own home is inspected instead.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsUnknownKeysWarningRequest':
+        assert isinstance(obj, dict)
+        context = UserSettingsHostContext.from_dict(obj.get("context"))
+        return _UserSettingsUnknownKeysWarningRequest(context)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["context"] = to_class(UserSettingsHostContext, self.context)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _UserSettingsMigrateObsoleteOnDiskResult:
+    """The outcome of the one-time obsolete-settings cleanup."""
+
+    status: _UserSettingsMigrateObsoleteOnDiskStatus
+    """What the cleanup did. Only `changed` rewrote the document. The cleaned settings are not
+    returned here: the document is written before this replies, so `user.settings.load` reads
+    it authoritatively.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_UserSettingsMigrateObsoleteOnDiskResult':
+        assert isinstance(obj, dict)
+        status = _UserSettingsMigrateObsoleteOnDiskStatus(obj.get("status"))
+        return _UserSettingsMigrateObsoleteOnDiskResult(status)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["status"] = to_enum(_UserSettingsMigrateObsoleteOnDiskStatus, self.status)
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -38055,6 +40686,185 @@ class ManagedSettingsResolveResult:
             result["permissionsContext"] = from_union([lambda x: to_class(ManagedPermissionsContext, x), from_none], self.permissions_context)
         if self.values is not None:
             result["values"] = from_union([lambda x: to_class(ManagedSettingsValues, x), from_none], self.values)
+        return result
+
+# Experimental: this type is part of an experimental API and may change or be removed.
+# Internal: this type is an internal SDK API and is not part of the public surface.
+@dataclass
+class _ManagedSettingsIngestResult:
+    """The managed policy layers an ingestion resolved, together with the per-layer outcome
+    flags a host needs to decide how much to trust the result. The flags are reported rather
+    than folded into the settings because a host must be able to distinguish an unmanaged
+    device from a managed device whose policy could not be confirmed, and apply its
+    fail-closed gates in the second case.
+    """
+    device_load_failed: bool
+    """The device layer could not be read, so it is unconfirmed rather than known-absent."""
+
+    device_sandbox_undetermined: bool
+    """Whether the device layer's sandbox intent could not be determined, so a consumer must not
+    read its absence as permission to run unsandboxed.
+    """
+    device_source_found: bool
+    """A device-managed policy is known to exist."""
+
+    log_messages: list[_ManagedSettingsLogMessage]
+    """Diagnostics emitted while resolving the layers, in the order they occurred."""
+
+    policy_helper_configured: bool
+    """A policy helper is configured for this host."""
+
+    policy_helper_fail_closed: bool
+    """The policy helper's failure must be treated as fail-closed rather than ignored."""
+
+    policy_helper_load_failed: bool
+    """The policy helper was configured but could not be run or its output could not be read."""
+
+    server_cache_fallback: bool
+    """A live fetch failed but a recent cached entry was served in its place, so
+    `serverFetchFailed` stays false. Lets a consumer distinguish a clean fetch from a
+    cache-backed fallback.
+    """
+    server_fetch_failed: bool
+    """The server fetch failed and no cached entry stood in for it, so the server layer is
+    unconfirmed and fail-closed gates apply.
+    """
+    server_forced_refresh_failure: bool
+    """The server fetch failed while a policy demanded a fresh confirmation, which is the strict
+    posture an enterprise opted into rather than an ordinary transient failure.
+    """
+    server_resolution: _ManagedSettingsServerPolicyResolution
+    """How the server layer was resolved."""
+
+    server_retryable_failure: bool
+    """The server fetch failed in a way a later retry could succeed at, as opposed to a refusal
+    that no retry will change.
+    """
+    server_source_found: bool
+    """A server-managed policy is known to exist even though `serverResponse` is intentionally
+    unset. Consumers should OR this with the presence of `serverResponse` when deciding
+    whether the device is managed, so a fresh start during an outage still applies the
+    fail-closed gates instead of treating the device as unmanaged.
+    """
+    server_token_unavailable: bool
+    """No usable token was available, so no server fetch was attempted."""
+
+    device_response: Any = None
+    """The device layer discovered from the machine, when one exists."""
+
+    device_sandbox_floor: Any = None
+    """The sandbox floor contributed by the device layer."""
+
+    permissions: Any = None
+    """The effective managed permissions layer, when the resolved policy carries one."""
+
+    policy_helper_authority: _ManagedSettingsPolicyHelperAuthority | None = None
+    """Which channel registered the policy helper that produced the helper layer."""
+
+    policy_helper_response: Any = None
+    """The layer produced by the platform policy helper, when one ran."""
+
+    server_client_update_requested: str | None = None
+    """Minimum client version requested by a successful response. Advisory only; the delivered
+    policy remains active.
+    """
+    server_client_update_required: str | None = None
+    """The server refused to deliver a policy because this client is too old to enforce it,
+    carrying the user-facing sentence describing the refusal. No retry will help; the remedy
+    is a client update. Gates that exist only because of managed policy should deny on this
+    rather than falling back to their unmanaged default.
+    """
+    server_fetch_error: str | None = None
+    """The error that made the server fetch fail, when one did."""
+
+    server_permissions_floor: Any = None
+    """The synthesized fail-closed permissions layer applied in place of a policy a refused
+    client may not enforce.
+    """
+    server_response: Any = None
+    """The account's server-delivered policy, when one was resolved."""
+
+    server_sandbox_floor: Any = None
+    """The sandbox object from a cached server policy that a forced refresh declined to serve in
+    full. Folded back into the effective sandbox layer so an outage during a forced refresh
+    still synthesizes the fail-closed sandbox floor from the administrator's known intent.
+    """
+    settings: Any = None
+    """The effective managed settings composed from every resolved layer. Omitted when no layer
+    set anything, so an unmanaged host locks nothing.
+    """
+
+    @staticmethod
+    def from_dict(obj: Any) -> '_ManagedSettingsIngestResult':
+        assert isinstance(obj, dict)
+        device_load_failed = from_bool(obj.get("deviceLoadFailed"))
+        device_sandbox_undetermined = from_bool(obj.get("deviceSandboxUndetermined"))
+        device_source_found = from_bool(obj.get("deviceSourceFound"))
+        log_messages = from_list(_ManagedSettingsLogMessage.from_dict, obj.get("logMessages"))
+        policy_helper_configured = from_bool(obj.get("policyHelperConfigured"))
+        policy_helper_fail_closed = from_bool(obj.get("policyHelperFailClosed"))
+        policy_helper_load_failed = from_bool(obj.get("policyHelperLoadFailed"))
+        server_cache_fallback = from_bool(obj.get("serverCacheFallback"))
+        server_fetch_failed = from_bool(obj.get("serverFetchFailed"))
+        server_forced_refresh_failure = from_bool(obj.get("serverForcedRefreshFailure"))
+        server_resolution = _ManagedSettingsServerPolicyResolution(obj.get("serverResolution"))
+        server_retryable_failure = from_bool(obj.get("serverRetryableFailure"))
+        server_source_found = from_bool(obj.get("serverSourceFound"))
+        server_token_unavailable = from_bool(obj.get("serverTokenUnavailable"))
+        device_response = obj.get("deviceResponse")
+        device_sandbox_floor = obj.get("deviceSandboxFloor")
+        permissions = obj.get("permissions")
+        policy_helper_authority = from_union([_ManagedSettingsPolicyHelperAuthority, from_none], obj.get("policyHelperAuthority"))
+        policy_helper_response = obj.get("policyHelperResponse")
+        server_client_update_requested = from_union([from_str, from_none], obj.get("serverClientUpdateRequested"))
+        server_client_update_required = from_union([from_str, from_none], obj.get("serverClientUpdateRequired"))
+        server_fetch_error = from_union([from_str, from_none], obj.get("serverFetchError"))
+        server_permissions_floor = obj.get("serverPermissionsFloor")
+        server_response = obj.get("serverResponse")
+        server_sandbox_floor = obj.get("serverSandboxFloor")
+        settings = obj.get("settings")
+        return _ManagedSettingsIngestResult(device_load_failed, device_sandbox_undetermined, device_source_found, log_messages, policy_helper_configured, policy_helper_fail_closed, policy_helper_load_failed, server_cache_fallback, server_fetch_failed, server_forced_refresh_failure, server_resolution, server_retryable_failure, server_source_found, server_token_unavailable, device_response, device_sandbox_floor, permissions, policy_helper_authority, policy_helper_response, server_client_update_requested, server_client_update_required, server_fetch_error, server_permissions_floor, server_response, server_sandbox_floor, settings)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["deviceLoadFailed"] = from_bool(self.device_load_failed)
+        result["deviceSandboxUndetermined"] = from_bool(self.device_sandbox_undetermined)
+        result["deviceSourceFound"] = from_bool(self.device_source_found)
+        result["logMessages"] = from_list(lambda x: to_class(_ManagedSettingsLogMessage, x), self.log_messages)
+        result["policyHelperConfigured"] = from_bool(self.policy_helper_configured)
+        result["policyHelperFailClosed"] = from_bool(self.policy_helper_fail_closed)
+        result["policyHelperLoadFailed"] = from_bool(self.policy_helper_load_failed)
+        result["serverCacheFallback"] = from_bool(self.server_cache_fallback)
+        result["serverFetchFailed"] = from_bool(self.server_fetch_failed)
+        result["serverForcedRefreshFailure"] = from_bool(self.server_forced_refresh_failure)
+        result["serverResolution"] = to_enum(_ManagedSettingsServerPolicyResolution, self.server_resolution)
+        result["serverRetryableFailure"] = from_bool(self.server_retryable_failure)
+        result["serverSourceFound"] = from_bool(self.server_source_found)
+        result["serverTokenUnavailable"] = from_bool(self.server_token_unavailable)
+        if self.device_response is not None:
+            result["deviceResponse"] = self.device_response
+        if self.device_sandbox_floor is not None:
+            result["deviceSandboxFloor"] = self.device_sandbox_floor
+        if self.permissions is not None:
+            result["permissions"] = self.permissions
+        if self.policy_helper_authority is not None:
+            result["policyHelperAuthority"] = from_union([lambda x: to_enum(_ManagedSettingsPolicyHelperAuthority, x), from_none], self.policy_helper_authority)
+        if self.policy_helper_response is not None:
+            result["policyHelperResponse"] = self.policy_helper_response
+        if self.server_client_update_requested is not None:
+            result["serverClientUpdateRequested"] = from_union([from_str, from_none], self.server_client_update_requested)
+        if self.server_client_update_required is not None:
+            result["serverClientUpdateRequired"] = from_union([from_str, from_none], self.server_client_update_required)
+        if self.server_fetch_error is not None:
+            result["serverFetchError"] = from_union([from_str, from_none], self.server_fetch_error)
+        if self.server_permissions_floor is not None:
+            result["serverPermissionsFloor"] = self.server_permissions_floor
+        if self.server_response is not None:
+            result["serverResponse"] = self.server_response
+        if self.server_sandbox_floor is not None:
+            result["serverSandboxFloor"] = self.server_sandbox_floor
+        if self.settings is not None:
+            result["settings"] = self.settings
         return result
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -51999,12 +54809,16 @@ class RPC:
     feature_flags_metadata_result: _FeatureFlagsMetadataResult
     feature_flags_resolve_request: _FeatureFlagsResolveRequest
     feature_flags_resolve_result: dict[str, bool]
+    feature_flags_resolve_startup_gates_request: _FeatureFlagsResolveStartupGatesRequest
+    feature_flags_resolve_startup_gates_result: dict[str, bool]
     filter_mapping: dict[str, ContentFilterMode] | ContentFilterMode
     fleet_start_request: FleetStartRequest
     fleet_start_result: FleetStartResult
     folder_trust_add_params: FolderTrustAddParams
     folder_trust_check_params: FolderTrustCheckParams
     folder_trust_check_result: FolderTrustCheckResult
+    folder_trust_is_trusted_params: _FolderTrustIsTrustedParams
+    force_login_orgs_decision: _ForceLoginOrgsDecision
     gh_cli_auth_info: GhCLIAuthInfo
     git_current_branch_remote_result: _GitCurrentBranchRemoteResult
     git_cwd_request: _GitCwdRequest
@@ -52124,6 +54938,7 @@ class RPC:
     llm_inference_http_response_start_result: LlmInferenceHTTPResponseStartResult
     llm_inference_set_provider_result: LlmInferenceSetProviderResult
     local_session_metadata_value: LocalSessionMetadataValue
+    location_permissions_cleanup_result: _LocationPermissionsCleanupResult
     logged_in_user: _LoggedInUser
     login_provider_kind: LoginProviderKind
     log_request: LogRequest
@@ -52139,19 +54954,44 @@ class RPC:
     managed_plugin_retry_entry: ManagedPluginRetryEntry
     managed_plugin_retry_status: ManagedPluginRetryStatus
     managed_setting_meta: ManagedSettingMeta
+    managed_settings_apply_controls_params: _ManagedSettingsApplyControlsParams
+    managed_settings_apply_controls_result: _ManagedSettingsApplyControlsResult
+    managed_settings_bypass_disable_source: _ManagedSettingsBypassDisableSource
+    managed_settings_bypass_policy_resolution: _ManagedSettingsBypassPolicyResolution
     managed_settings_channel: ManagedSettingsChannel
     managed_settings_compose_layer: ManagedSettingsComposeLayer
     managed_settings_compose_request: ManagedSettingsComposeRequest
     managed_settings_compose_result: ManagedSettingsComposeResult
     managed_settings_diagnostic: ManagedSettingsDiagnostic
     managed_settings_diagnostic_severity: ManagedSettingsDiagnosticSeverity
+    managed_settings_ingest_params: _ManagedSettingsIngestParams
+    managed_settings_ingest_result: _ManagedSettingsIngestResult
     managed_settings_layer: ManagedSettingsLayer
+    managed_settings_load_remote_control_params: _ManagedSettingsLoadRemoteControlParams
+    managed_settings_load_remote_control_result: _ManagedSettingsLoadRemoteControlResult
+    managed_settings_log_level: _ManagedSettingsLogLevel
+    managed_settings_log_message: _ManagedSettingsLogMessage
     managed_settings_meta: ManagedSettingsMeta
+    managed_settings_parse_client_value_params: _ManagedSettingsParseClientValueParams
+    managed_settings_parse_client_value_result: _ManagedSettingsParseClientValueResult
+    managed_settings_policy_helper_authority: _ManagedSettingsPolicyHelperAuthority
+    managed_settings_policy_helper_reason: _ManagedSettingsPolicyHelperReason
+    managed_settings_read_device_result: _ManagedSettingsReadDeviceResult
     managed_settings_read_result: ManagedSettingsReadResult
+    managed_settings_resolve_bypass_disable_transition_params: _ManagedSettingsResolveBypassDisableTransitionParams
+    managed_settings_resolve_bypass_disable_transition_result: _ManagedSettingsResolveBypassDisableTransitionResult
     managed_settings_resolved_data: ManagedSettingsResolvedData
+    managed_settings_resolve_device_force_login_orgs_gate_params: _ManagedSettingsResolveDeviceForceLoginOrgsGateParams
+    managed_settings_resolve_effective_value_params: _ManagedSettingsResolveEffectiveValueParams
+    managed_settings_resolve_effective_value_result: _ManagedSettingsResolveEffectiveValueResult
     managed_settings_resolve_request: ManagedSettingsResolveRequest
     managed_settings_resolve_result: ManagedSettingsResolveResult
+    managed_settings_resolve_startup_policy_params: _ManagedSettingsResolveStartupPolicyParams
+    managed_settings_resolve_startup_policy_result: _ManagedSettingsResolveStartupPolicyResult
+    managed_settings_retain_policy_params: _ManagedSettingsRetainPolicyParams
     managed_settings_schema_result: ManagedSettingsSchemaResult
+    managed_settings_server_policy_cache_mode: _ManagedSettingsServerPolicyCacheMode
+    managed_settings_server_policy_resolution: _ManagedSettingsServerPolicyResolution
     managed_settings_validate_request: ManagedSettingsValidateRequest
     managed_settings_validate_result: ManagedSettingsValidateResult
     managed_settings_values: ManagedSettingsValues
@@ -52541,6 +55381,8 @@ class RPC:
     permissions_configure_additional_content_exclusion_policy_scope: AdditionalContentExclusionPolicyScope
     permissions_configure_params: PermissionsConfigureParams
     permissions_configure_result: PermissionsConfigureResult
+    permissions_evaluate_managed_policy_params: _PermissionsEvaluateManagedPolicyParams
+    permissions_evaluate_managed_policy_result: PermissionsEvaluateManagedPolicyResult
     permissions_folder_trust_add_trusted_result: PermissionsFolderTrustAddTrustedResult
     permissions_get_mode_request: PermissionsGetModeRequest
     permissions_get_mode_result: PermissionsGetModeResult
@@ -52577,6 +55419,8 @@ class RPC:
     permissions_urls_set_unrestricted_mode_result: PermissionsUrlsSetUnrestrictedModeResult
     permission_urls_config: PermissionUrlsConfig
     permission_urls_set_unrestricted_mode_params: PermissionUrlsSetUnrestrictedModeParams
+    persistence_write_raw_json_locked_request: PersistenceWriteRawJSONLockedRequest
+    persistence_write_raw_json_locked_result: PersistenceWriteRawJSONLockedResult
     ping_request: PingRequest
     ping_result: PingResult
     plan_read_result: PlanReadResult
@@ -52721,11 +55565,17 @@ class RPC:
     remote_session_metadata_value: RemoteSessionMetadataValue
     remote_session_mode: RemoteSessionMode
     remote_session_repository: RemoteSessionRepository
+    repo_settings_edit_request: _RepoSettingsEditRequest
+    repo_settings_edit_scope: _RepoSettingsEditScope
     repo_settings_read_raw_request: _RepoSettingsReadRawRequest
     repo_settings_read_raw_result: _RepoSettingsReadRawResult
     repo_settings_write_all_request: _RepoSettingsWriteAllRequest
     repo_settings_write_key_request: _RepoSettingsWriteKeyRequest
     response_format: ResponseFormat
+    sandbox_apply_defaults_request: SandboxApplyDefaultsRequest
+    sandbox_check_enforcement_command_result: bool
+    sandbox_check_platform_support_result: bool
+    sandbox_check_windows_host_loopback_support_result: bool
     sandbox_config: SandboxConfig
     sandbox_config_auth: SandboxConfigAuth
     sandbox_config_source: SandboxConfigSource
@@ -52741,18 +55591,40 @@ class RPC:
     sandbox_credential_suggestions_result: SandboxCredentialSuggestionsResult
     sandbox_disable_for_session_request: SandboxDisableForSessionRequest
     sandbox_disable_for_session_result: SandboxDisableForSessionResult
+    sandbox_docs_url_result: SandboxDocsURLResult
+    sandbox_effective_for_optional_params: _SandboxEffectiveForOptionalParams
+    sandbox_effective_for_optional_result: _SandboxEffectiveForOptionalResult
+    sandbox_enforcement_command_allowed_params: _SandboxEnforcementCommandAllowedParams
     sandbox_enforcement_status: SandboxEnforcementStatus
+    sandbox_filter_picker_candidates_params: _SandboxFilterPickerCandidatesParams
+    sandbox_filter_picker_candidates_result: _SandboxFilterPickerCandidatesResult
+    sandbox_get_unsupported_message_result: str
+    sandbox_get_unsupported_setting_disabled_notice_result: str
     sandbox_grant_path_for_request_request: SandboxGrantPathForRequestRequest
     sandbox_grant_path_for_request_result: SandboxGrantPathForRequestResult
     sandbox_host_capability: SandboxHostCapability
     sandbox_host_capability_name: str
     sandbox_host_support: SandboxHostSupport
     sandbox_masked_env_var: SandboxMaskedEnvVar
+    sandbox_picker_candidate: _SandboxPickerCandidate
+    sandbox_prepare_picker_policy_params: _SandboxPreparePickerPolicyParams
+    sandbox_prepare_picker_policy_result: _SandboxPreparePickerPolicyResult
+    sandbox_proxy_ca_check_installation_support_result: bool
+    sandbox_proxy_ca_check_relevance_result: bool
     sandbox_proxy_ca_create_result: SandboxProxyCACreateResult
     sandbox_proxy_ca_request: SandboxProxyCARequest
     sandbox_proxy_ca_state: SandboxProxyCAState
     sandbox_proxy_ca_status: SandboxProxyCAStatus
+    sandbox_proxy_secret_get_result: SandboxProxySecretGetResult
+    sandbox_proxy_secret_location: SandboxProxySecretLocation
+    sandbox_proxy_secret_save_request: SandboxProxySecretSaveRequest
+    sandbox_proxy_secret_save_result: SandboxProxySecretSaveResult
+    sandbox_resolve_floored_config_params: _SandboxResolveFlooredConfigParams
+    sandbox_resolve_floored_config_result: SandboxResolveFlooredConfigResult
     sandbox_session_change: SandboxSessionChange
+    sandbox_settings_apply_defaults_result: dict[str, Any]
+    sandbox_unsupported_startup_notice_params: _SandboxUnsupportedStartupNoticeParams
+    sandbox_unsupported_startup_notice_result: _SandboxUnsupportedStartupNoticeResult
     schedule_add_at_request: ScheduleAddAtRequest
     schedule_add_cron_request: ScheduleAddCronRequest
     schedule_add_request: ScheduleAddRequest
@@ -53056,6 +55928,8 @@ class RPC:
     slash_command_show_dialog_result: SlashCommandShowDialogResult
     slash_command_text_result: SlashCommandTextResult
     slash_command_timeline_entry: SlashCommandTimelineEntry
+    staff_log_level_migration_status: StaffLogLevelMigrationStatus
+    staff_update_channel_migration_status: StaffUpdateChannelMigrationStatus
     subagent_settings_entry: SubagentSettingsEntry
     subagent_settings_entry_context_tier: SubagentSettingsEntryContextTier
     system_message_block: SystemMessageBlock
@@ -53172,20 +56046,47 @@ class RPC:
     user_setting_metadata: UserSettingMetadata
     user_settings_apply_top_key_request: UserSettingsApplyTopKeyRequest
     user_settings_apply_top_key_result: UserSettingsApplyTopKeyResult
+    user_settings_build_runtime_request: _UserSettingsBuildRuntimeRequest
+    user_settings_build_runtime_result: dict[str, Any]
     user_settings_edit_request: _UserSettingsEditRequest
     user_settings_get_paths_request: UserSettingsGetPathsRequest
     user_settings_get_paths_result: UserSettingsGetPathsResult
     user_settings_get_result: UserSettingsGetResult
     user_settings_governance_keys_result: UserSettingsGovernanceKeysResult
+    user_settings_host_context: UserSettingsHostContext
+    user_settings_load_and_merge_repo_request: _UserSettingsLoadAndMergeRepoRequest
+    user_settings_load_and_merge_repo_result: _UserSettingsLoadAndMergeRepoResult
+    user_settings_load_for_config_dir_request: _UserSettingsLoadForConfigDirRequest
+    user_settings_load_for_config_dir_result: dict[str, Any]
     user_settings_load_for_edit_result: UserSettingsLoadForEditResult
+    user_settings_load_repo_request: UserSettingsLoadRepoRequest
+    user_settings_load_repo_result: UserSettingsLoadRepoResult
+    user_settings_load_with_warning_result: UserSettingsLoadWithWarningResult
+    user_settings_merge_managed_and_user_params: _UserSettingsMergeManagedAndUserParams
+    user_settings_merge_managed_and_user_result: UserSettingsMergeManagedAndUserResult
+    user_settings_merge_repo_value_params: _UserSettingsMergeRepoValueParams
+    user_settings_merge_repo_value_result: UserSettingsMergeRepoValueResult
+    user_settings_migrate_obsolete_on_disk_request: _UserSettingsMigrateObsoleteOnDiskRequest
+    user_settings_migrate_obsolete_on_disk_result: _UserSettingsMigrateObsoleteOnDiskResult
+    user_settings_migrate_obsolete_on_disk_status: _UserSettingsMigrateObsoleteOnDiskStatus
+    user_settings_migrate_staff_log_level_once_request: _UserSettingsMigrateStaffLogLevelOnceRequest
+    user_settings_migrate_staff_log_level_once_result: _UserSettingsMigrateStaffLogLevelOnceResult
+    user_settings_migrate_staff_update_channel_once_result: _UserSettingsMigrateStaffUpdateChannelOnceResult
     user_settings_normalize_request: UserSettingsNormalizeRequest
     user_settings_normalize_result: UserSettingsNormalizeResult
+    user_settings_path_result: UserSettingsPathResult
     user_settings_problem: UserSettingsProblem
     user_settings_problem_location: UserSettingsProblemLocation
     user_settings_problem_source: UserSettingsProblemSource
     user_settings_problems_request: UserSettingsProblemsRequest
     user_settings_problems_result: UserSettingsProblemsResult
+    user_settings_reset_staff_model_selection_once_request: _UserSettingsResetStaffModelSelectionOnceRequest
+    user_settings_reset_staff_model_selection_once_result: _UserSettingsResetStaffModelSelectionOnceResult
+    user_settings_set_hook_disabled_request: _UserSettingsSetHookDisabledRequest
+    user_settings_set_hook_disabled_result: _UserSettingsSetHookDisabledResult
     user_settings_set_request: UserSettingsSetRequest
+    user_settings_unknown_keys_warning_request: _UserSettingsUnknownKeysWarningRequest
+    user_settings_unknown_keys_warning_result: _UserSettingsUnknownKeysWarningResult
     user_settings_update_request: _UserSettingsUpdateRequest
     user_settings_update_result: _UserSettingsUpdateResult
     user_settings_validate_request: UserSettingsValidateRequest
@@ -53658,12 +56559,16 @@ class RPC:
         feature_flags_metadata_result = _FeatureFlagsMetadataResult.from_dict(obj.get("FeatureFlagsMetadataResult"))
         feature_flags_resolve_request = _FeatureFlagsResolveRequest.from_dict(obj.get("FeatureFlagsResolveRequest"))
         feature_flags_resolve_result = from_dict(from_bool, obj.get("FeatureFlagsResolveResult"))
+        feature_flags_resolve_startup_gates_request = _FeatureFlagsResolveStartupGatesRequest.from_dict(obj.get("FeatureFlagsResolveStartupGatesRequest"))
+        feature_flags_resolve_startup_gates_result = from_dict(from_bool, obj.get("FeatureFlagsResolveStartupGatesResult"))
         filter_mapping = from_union([lambda x: from_dict(ContentFilterMode, x), ContentFilterMode], obj.get("FilterMapping"))
         fleet_start_request = FleetStartRequest.from_dict(obj.get("FleetStartRequest"))
         fleet_start_result = FleetStartResult.from_dict(obj.get("FleetStartResult"))
         folder_trust_add_params = FolderTrustAddParams.from_dict(obj.get("FolderTrustAddParams"))
         folder_trust_check_params = FolderTrustCheckParams.from_dict(obj.get("FolderTrustCheckParams"))
         folder_trust_check_result = FolderTrustCheckResult.from_dict(obj.get("FolderTrustCheckResult"))
+        folder_trust_is_trusted_params = _FolderTrustIsTrustedParams.from_dict(obj.get("FolderTrustIsTrustedParams"))
+        force_login_orgs_decision = _ForceLoginOrgsDecision.from_dict(obj.get("ForceLoginOrgsDecision"))
         gh_cli_auth_info = GhCLIAuthInfo.from_dict(obj.get("GhCliAuthInfo"))
         git_current_branch_remote_result = _GitCurrentBranchRemoteResult.from_dict(obj.get("GitCurrentBranchRemoteResult"))
         git_cwd_request = _GitCwdRequest.from_dict(obj.get("GitCwdRequest"))
@@ -53783,6 +56688,7 @@ class RPC:
         llm_inference_http_response_start_result = LlmInferenceHTTPResponseStartResult.from_dict(obj.get("LlmInferenceHttpResponseStartResult"))
         llm_inference_set_provider_result = LlmInferenceSetProviderResult.from_dict(obj.get("LlmInferenceSetProviderResult"))
         local_session_metadata_value = LocalSessionMetadataValue.from_dict(obj.get("LocalSessionMetadataValue"))
+        location_permissions_cleanup_result = _LocationPermissionsCleanupResult.from_dict(obj.get("LocationPermissionsCleanupResult"))
         logged_in_user = _LoggedInUser.from_dict(obj.get("LoggedInUser"))
         login_provider_kind = LoginProviderKind(obj.get("LoginProviderKind"))
         log_request = LogRequest.from_dict(obj.get("LogRequest"))
@@ -53798,19 +56704,44 @@ class RPC:
         managed_plugin_retry_entry = ManagedPluginRetryEntry.from_dict(obj.get("ManagedPluginRetryEntry"))
         managed_plugin_retry_status = ManagedPluginRetryStatus(obj.get("ManagedPluginRetryStatus"))
         managed_setting_meta = ManagedSettingMeta.from_dict(obj.get("ManagedSettingMeta"))
+        managed_settings_apply_controls_params = _ManagedSettingsApplyControlsParams.from_dict(obj.get("ManagedSettingsApplyControlsParams"))
+        managed_settings_apply_controls_result = _ManagedSettingsApplyControlsResult.from_dict(obj.get("ManagedSettingsApplyControlsResult"))
+        managed_settings_bypass_disable_source = _ManagedSettingsBypassDisableSource(obj.get("ManagedSettingsBypassDisableSource"))
+        managed_settings_bypass_policy_resolution = _ManagedSettingsBypassPolicyResolution(obj.get("ManagedSettingsBypassPolicyResolution"))
         managed_settings_channel = ManagedSettingsChannel(obj.get("ManagedSettingsChannel"))
         managed_settings_compose_layer = ManagedSettingsComposeLayer.from_dict(obj.get("ManagedSettingsComposeLayer"))
         managed_settings_compose_request = ManagedSettingsComposeRequest.from_dict(obj.get("ManagedSettingsComposeRequest"))
         managed_settings_compose_result = ManagedSettingsComposeResult.from_dict(obj.get("ManagedSettingsComposeResult"))
         managed_settings_diagnostic = ManagedSettingsDiagnostic.from_dict(obj.get("ManagedSettingsDiagnostic"))
         managed_settings_diagnostic_severity = ManagedSettingsDiagnosticSeverity(obj.get("ManagedSettingsDiagnosticSeverity"))
+        managed_settings_ingest_params = _ManagedSettingsIngestParams.from_dict(obj.get("ManagedSettingsIngestParams"))
+        managed_settings_ingest_result = _ManagedSettingsIngestResult.from_dict(obj.get("ManagedSettingsIngestResult"))
         managed_settings_layer = ManagedSettingsLayer.from_dict(obj.get("ManagedSettingsLayer"))
+        managed_settings_load_remote_control_params = _ManagedSettingsLoadRemoteControlParams.from_dict(obj.get("ManagedSettingsLoadRemoteControlParams"))
+        managed_settings_load_remote_control_result = _ManagedSettingsLoadRemoteControlResult.from_dict(obj.get("ManagedSettingsLoadRemoteControlResult"))
+        managed_settings_log_level = _ManagedSettingsLogLevel(obj.get("ManagedSettingsLogLevel"))
+        managed_settings_log_message = _ManagedSettingsLogMessage.from_dict(obj.get("ManagedSettingsLogMessage"))
         managed_settings_meta = ManagedSettingsMeta.from_dict(obj.get("ManagedSettingsMeta"))
+        managed_settings_parse_client_value_params = _ManagedSettingsParseClientValueParams.from_dict(obj.get("ManagedSettingsParseClientValueParams"))
+        managed_settings_parse_client_value_result = _ManagedSettingsParseClientValueResult.from_dict(obj.get("ManagedSettingsParseClientValueResult"))
+        managed_settings_policy_helper_authority = _ManagedSettingsPolicyHelperAuthority(obj.get("ManagedSettingsPolicyHelperAuthority"))
+        managed_settings_policy_helper_reason = _ManagedSettingsPolicyHelperReason(obj.get("ManagedSettingsPolicyHelperReason"))
+        managed_settings_read_device_result = _ManagedSettingsReadDeviceResult.from_dict(obj.get("ManagedSettingsReadDeviceResult"))
         managed_settings_read_result = ManagedSettingsReadResult.from_dict(obj.get("ManagedSettingsReadResult"))
+        managed_settings_resolve_bypass_disable_transition_params = _ManagedSettingsResolveBypassDisableTransitionParams.from_dict(obj.get("ManagedSettingsResolveBypassDisableTransitionParams"))
+        managed_settings_resolve_bypass_disable_transition_result = _ManagedSettingsResolveBypassDisableTransitionResult.from_dict(obj.get("ManagedSettingsResolveBypassDisableTransitionResult"))
         managed_settings_resolved_data = ManagedSettingsResolvedData.from_dict(obj.get("ManagedSettingsResolvedData"))
+        managed_settings_resolve_device_force_login_orgs_gate_params = _ManagedSettingsResolveDeviceForceLoginOrgsGateParams.from_dict(obj.get("ManagedSettingsResolveDeviceForceLoginOrgsGateParams"))
+        managed_settings_resolve_effective_value_params = _ManagedSettingsResolveEffectiveValueParams.from_dict(obj.get("ManagedSettingsResolveEffectiveValueParams"))
+        managed_settings_resolve_effective_value_result = _ManagedSettingsResolveEffectiveValueResult.from_dict(obj.get("ManagedSettingsResolveEffectiveValueResult"))
         managed_settings_resolve_request = ManagedSettingsResolveRequest.from_dict(obj.get("ManagedSettingsResolveRequest"))
         managed_settings_resolve_result = ManagedSettingsResolveResult.from_dict(obj.get("ManagedSettingsResolveResult"))
+        managed_settings_resolve_startup_policy_params = _ManagedSettingsResolveStartupPolicyParams.from_dict(obj.get("ManagedSettingsResolveStartupPolicyParams"))
+        managed_settings_resolve_startup_policy_result = _ManagedSettingsResolveStartupPolicyResult.from_dict(obj.get("ManagedSettingsResolveStartupPolicyResult"))
+        managed_settings_retain_policy_params = _ManagedSettingsRetainPolicyParams.from_dict(obj.get("ManagedSettingsRetainPolicyParams"))
         managed_settings_schema_result = ManagedSettingsSchemaResult.from_dict(obj.get("ManagedSettingsSchemaResult"))
+        managed_settings_server_policy_cache_mode = _ManagedSettingsServerPolicyCacheMode(obj.get("ManagedSettingsServerPolicyCacheMode"))
+        managed_settings_server_policy_resolution = _ManagedSettingsServerPolicyResolution(obj.get("ManagedSettingsServerPolicyResolution"))
         managed_settings_validate_request = ManagedSettingsValidateRequest.from_dict(obj.get("ManagedSettingsValidateRequest"))
         managed_settings_validate_result = ManagedSettingsValidateResult.from_dict(obj.get("ManagedSettingsValidateResult"))
         managed_settings_values = ManagedSettingsValues.from_dict(obj.get("ManagedSettingsValues"))
@@ -54200,6 +57131,8 @@ class RPC:
         permissions_configure_additional_content_exclusion_policy_scope = AdditionalContentExclusionPolicyScope(obj.get("PermissionsConfigureAdditionalContentExclusionPolicyScope"))
         permissions_configure_params = PermissionsConfigureParams.from_dict(obj.get("PermissionsConfigureParams"))
         permissions_configure_result = PermissionsConfigureResult.from_dict(obj.get("PermissionsConfigureResult"))
+        permissions_evaluate_managed_policy_params = _PermissionsEvaluateManagedPolicyParams.from_dict(obj.get("PermissionsEvaluateManagedPolicyParams"))
+        permissions_evaluate_managed_policy_result = PermissionsEvaluateManagedPolicyResult.from_dict(obj.get("PermissionsEvaluateManagedPolicyResult"))
         permissions_folder_trust_add_trusted_result = PermissionsFolderTrustAddTrustedResult.from_dict(obj.get("PermissionsFolderTrustAddTrustedResult"))
         permissions_get_mode_request = PermissionsGetModeRequest.from_dict(obj.get("PermissionsGetModeRequest"))
         permissions_get_mode_result = PermissionsGetModeResult.from_dict(obj.get("PermissionsGetModeResult"))
@@ -54236,6 +57169,8 @@ class RPC:
         permissions_urls_set_unrestricted_mode_result = PermissionsUrlsSetUnrestrictedModeResult.from_dict(obj.get("PermissionsUrlsSetUnrestrictedModeResult"))
         permission_urls_config = PermissionUrlsConfig.from_dict(obj.get("PermissionUrlsConfig"))
         permission_urls_set_unrestricted_mode_params = PermissionUrlsSetUnrestrictedModeParams.from_dict(obj.get("PermissionUrlsSetUnrestrictedModeParams"))
+        persistence_write_raw_json_locked_request = PersistenceWriteRawJSONLockedRequest.from_dict(obj.get("PersistenceWriteRawJsonLockedRequest"))
+        persistence_write_raw_json_locked_result = PersistenceWriteRawJSONLockedResult.from_dict(obj.get("PersistenceWriteRawJsonLockedResult"))
         ping_request = PingRequest.from_dict(obj.get("PingRequest"))
         ping_result = PingResult.from_dict(obj.get("PingResult"))
         plan_read_result = PlanReadResult.from_dict(obj.get("PlanReadResult"))
@@ -54380,11 +57315,17 @@ class RPC:
         remote_session_metadata_value = RemoteSessionMetadataValue.from_dict(obj.get("RemoteSessionMetadataValue"))
         remote_session_mode = RemoteSessionMode(obj.get("RemoteSessionMode"))
         remote_session_repository = RemoteSessionRepository.from_dict(obj.get("RemoteSessionRepository"))
+        repo_settings_edit_request = _RepoSettingsEditRequest.from_dict(obj.get("RepoSettingsEditRequest"))
+        repo_settings_edit_scope = _RepoSettingsEditScope(obj.get("RepoSettingsEditScope"))
         repo_settings_read_raw_request = _RepoSettingsReadRawRequest.from_dict(obj.get("RepoSettingsReadRawRequest"))
         repo_settings_read_raw_result = _RepoSettingsReadRawResult.from_dict(obj.get("RepoSettingsReadRawResult"))
         repo_settings_write_all_request = _RepoSettingsWriteAllRequest.from_dict(obj.get("RepoSettingsWriteAllRequest"))
         repo_settings_write_key_request = _RepoSettingsWriteKeyRequest.from_dict(obj.get("RepoSettingsWriteKeyRequest"))
         response_format = ResponseFormat.from_dict(obj.get("ResponseFormat"))
+        sandbox_apply_defaults_request = SandboxApplyDefaultsRequest.from_dict(obj.get("SandboxApplyDefaultsRequest"))
+        sandbox_check_enforcement_command_result = from_bool(obj.get("SandboxCheckEnforcementCommandResult"))
+        sandbox_check_platform_support_result = from_bool(obj.get("SandboxCheckPlatformSupportResult"))
+        sandbox_check_windows_host_loopback_support_result = from_bool(obj.get("SandboxCheckWindowsHostLoopbackSupportResult"))
         sandbox_config = SandboxConfig.from_dict(obj.get("SandboxConfig"))
         sandbox_config_auth = SandboxConfigAuth.from_dict(obj.get("SandboxConfigAuth"))
         sandbox_config_source = SandboxConfigSource(obj.get("SandboxConfigSource"))
@@ -54400,18 +57341,40 @@ class RPC:
         sandbox_credential_suggestions_result = SandboxCredentialSuggestionsResult.from_dict(obj.get("SandboxCredentialSuggestionsResult"))
         sandbox_disable_for_session_request = SandboxDisableForSessionRequest.from_dict(obj.get("SandboxDisableForSessionRequest"))
         sandbox_disable_for_session_result = SandboxDisableForSessionResult.from_dict(obj.get("SandboxDisableForSessionResult"))
+        sandbox_docs_url_result = SandboxDocsURLResult.from_dict(obj.get("SandboxDocsUrlResult"))
+        sandbox_effective_for_optional_params = _SandboxEffectiveForOptionalParams.from_dict(obj.get("SandboxEffectiveForOptionalParams"))
+        sandbox_effective_for_optional_result = _SandboxEffectiveForOptionalResult.from_dict(obj.get("SandboxEffectiveForOptionalResult"))
+        sandbox_enforcement_command_allowed_params = _SandboxEnforcementCommandAllowedParams.from_dict(obj.get("SandboxEnforcementCommandAllowedParams"))
         sandbox_enforcement_status = SandboxEnforcementStatus.from_dict(obj.get("SandboxEnforcementStatus"))
+        sandbox_filter_picker_candidates_params = _SandboxFilterPickerCandidatesParams.from_dict(obj.get("SandboxFilterPickerCandidatesParams"))
+        sandbox_filter_picker_candidates_result = _SandboxFilterPickerCandidatesResult.from_dict(obj.get("SandboxFilterPickerCandidatesResult"))
+        sandbox_get_unsupported_message_result = from_str(obj.get("SandboxGetUnsupportedMessageResult"))
+        sandbox_get_unsupported_setting_disabled_notice_result = from_str(obj.get("SandboxGetUnsupportedSettingDisabledNoticeResult"))
         sandbox_grant_path_for_request_request = SandboxGrantPathForRequestRequest.from_dict(obj.get("SandboxGrantPathForRequestRequest"))
         sandbox_grant_path_for_request_result = SandboxGrantPathForRequestResult.from_dict(obj.get("SandboxGrantPathForRequestResult"))
         sandbox_host_capability = SandboxHostCapability.from_dict(obj.get("SandboxHostCapability"))
         sandbox_host_capability_name = from_str(obj.get("SandboxHostCapabilityName"))
         sandbox_host_support = SandboxHostSupport.from_dict(obj.get("SandboxHostSupport"))
         sandbox_masked_env_var = SandboxMaskedEnvVar.from_dict(obj.get("SandboxMaskedEnvVar"))
+        sandbox_picker_candidate = _SandboxPickerCandidate.from_dict(obj.get("SandboxPickerCandidate"))
+        sandbox_prepare_picker_policy_params = _SandboxPreparePickerPolicyParams.from_dict(obj.get("SandboxPreparePickerPolicyParams"))
+        sandbox_prepare_picker_policy_result = _SandboxPreparePickerPolicyResult.from_dict(obj.get("SandboxPreparePickerPolicyResult"))
+        sandbox_proxy_ca_check_installation_support_result = from_bool(obj.get("SandboxProxyCaCheckInstallationSupportResult"))
+        sandbox_proxy_ca_check_relevance_result = from_bool(obj.get("SandboxProxyCaCheckRelevanceResult"))
         sandbox_proxy_ca_create_result = SandboxProxyCACreateResult.from_dict(obj.get("SandboxProxyCaCreateResult"))
         sandbox_proxy_ca_request = SandboxProxyCARequest.from_dict(obj.get("SandboxProxyCaRequest"))
         sandbox_proxy_ca_state = SandboxProxyCAState(obj.get("SandboxProxyCaState"))
         sandbox_proxy_ca_status = SandboxProxyCAStatus.from_dict(obj.get("SandboxProxyCaStatus"))
+        sandbox_proxy_secret_get_result = SandboxProxySecretGetResult.from_dict(obj.get("SandboxProxySecretGetResult"))
+        sandbox_proxy_secret_location = SandboxProxySecretLocation.from_dict(obj.get("SandboxProxySecretLocation"))
+        sandbox_proxy_secret_save_request = SandboxProxySecretSaveRequest.from_dict(obj.get("SandboxProxySecretSaveRequest"))
+        sandbox_proxy_secret_save_result = SandboxProxySecretSaveResult.from_dict(obj.get("SandboxProxySecretSaveResult"))
+        sandbox_resolve_floored_config_params = _SandboxResolveFlooredConfigParams.from_dict(obj.get("SandboxResolveFlooredConfigParams"))
+        sandbox_resolve_floored_config_result = SandboxResolveFlooredConfigResult.from_dict(obj.get("SandboxResolveFlooredConfigResult"))
         sandbox_session_change = SandboxSessionChange(obj.get("SandboxSessionChange"))
+        sandbox_settings_apply_defaults_result = from_dict(lambda x: x, obj.get("SandboxSettingsApplyDefaultsResult"))
+        sandbox_unsupported_startup_notice_params = _SandboxUnsupportedStartupNoticeParams.from_dict(obj.get("SandboxUnsupportedStartupNoticeParams"))
+        sandbox_unsupported_startup_notice_result = _SandboxUnsupportedStartupNoticeResult.from_dict(obj.get("SandboxUnsupportedStartupNoticeResult"))
         schedule_add_at_request = ScheduleAddAtRequest.from_dict(obj.get("ScheduleAddAtRequest"))
         schedule_add_cron_request = ScheduleAddCronRequest.from_dict(obj.get("ScheduleAddCronRequest"))
         schedule_add_request = ScheduleAddRequest.from_dict(obj.get("ScheduleAddRequest"))
@@ -54715,6 +57678,8 @@ class RPC:
         slash_command_show_dialog_result = SlashCommandShowDialogResult.from_dict(obj.get("SlashCommandShowDialogResult"))
         slash_command_text_result = SlashCommandTextResult.from_dict(obj.get("SlashCommandTextResult"))
         slash_command_timeline_entry = SlashCommandTimelineEntry.from_dict(obj.get("SlashCommandTimelineEntry"))
+        staff_log_level_migration_status = StaffLogLevelMigrationStatus(obj.get("StaffLogLevelMigrationStatus"))
+        staff_update_channel_migration_status = StaffUpdateChannelMigrationStatus(obj.get("StaffUpdateChannelMigrationStatus"))
         subagent_settings_entry = SubagentSettingsEntry.from_dict(obj.get("SubagentSettingsEntry"))
         subagent_settings_entry_context_tier = SubagentSettingsEntryContextTier(obj.get("SubagentSettingsEntryContextTier"))
         system_message_block = SystemMessageBlock.from_dict(obj.get("SystemMessageBlock"))
@@ -54831,20 +57796,47 @@ class RPC:
         user_setting_metadata = UserSettingMetadata.from_dict(obj.get("UserSettingMetadata"))
         user_settings_apply_top_key_request = UserSettingsApplyTopKeyRequest.from_dict(obj.get("UserSettingsApplyTopKeyRequest"))
         user_settings_apply_top_key_result = UserSettingsApplyTopKeyResult.from_dict(obj.get("UserSettingsApplyTopKeyResult"))
+        user_settings_build_runtime_request = _UserSettingsBuildRuntimeRequest.from_dict(obj.get("UserSettingsBuildRuntimeRequest"))
+        user_settings_build_runtime_result = from_dict(lambda x: x, obj.get("UserSettingsBuildRuntimeResult"))
         user_settings_edit_request = _UserSettingsEditRequest.from_dict(obj.get("UserSettingsEditRequest"))
         user_settings_get_paths_request = UserSettingsGetPathsRequest.from_dict(obj.get("UserSettingsGetPathsRequest"))
         user_settings_get_paths_result = UserSettingsGetPathsResult.from_dict(obj.get("UserSettingsGetPathsResult"))
         user_settings_get_result = UserSettingsGetResult.from_dict(obj.get("UserSettingsGetResult"))
         user_settings_governance_keys_result = UserSettingsGovernanceKeysResult.from_dict(obj.get("UserSettingsGovernanceKeysResult"))
+        user_settings_host_context = UserSettingsHostContext.from_dict(obj.get("UserSettingsHostContext"))
+        user_settings_load_and_merge_repo_request = _UserSettingsLoadAndMergeRepoRequest.from_dict(obj.get("UserSettingsLoadAndMergeRepoRequest"))
+        user_settings_load_and_merge_repo_result = _UserSettingsLoadAndMergeRepoResult.from_dict(obj.get("UserSettingsLoadAndMergeRepoResult"))
+        user_settings_load_for_config_dir_request = _UserSettingsLoadForConfigDirRequest.from_dict(obj.get("UserSettingsLoadForConfigDirRequest"))
+        user_settings_load_for_config_dir_result = from_dict(lambda x: x, obj.get("UserSettingsLoadForConfigDirResult"))
         user_settings_load_for_edit_result = UserSettingsLoadForEditResult.from_dict(obj.get("UserSettingsLoadForEditResult"))
+        user_settings_load_repo_request = UserSettingsLoadRepoRequest.from_dict(obj.get("UserSettingsLoadRepoRequest"))
+        user_settings_load_repo_result = UserSettingsLoadRepoResult.from_dict(obj.get("UserSettingsLoadRepoResult"))
+        user_settings_load_with_warning_result = UserSettingsLoadWithWarningResult.from_dict(obj.get("UserSettingsLoadWithWarningResult"))
+        user_settings_merge_managed_and_user_params = _UserSettingsMergeManagedAndUserParams.from_dict(obj.get("UserSettingsMergeManagedAndUserParams"))
+        user_settings_merge_managed_and_user_result = UserSettingsMergeManagedAndUserResult.from_dict(obj.get("UserSettingsMergeManagedAndUserResult"))
+        user_settings_merge_repo_value_params = _UserSettingsMergeRepoValueParams.from_dict(obj.get("UserSettingsMergeRepoValueParams"))
+        user_settings_merge_repo_value_result = UserSettingsMergeRepoValueResult.from_dict(obj.get("UserSettingsMergeRepoValueResult"))
+        user_settings_migrate_obsolete_on_disk_request = _UserSettingsMigrateObsoleteOnDiskRequest.from_dict(obj.get("UserSettingsMigrateObsoleteOnDiskRequest"))
+        user_settings_migrate_obsolete_on_disk_result = _UserSettingsMigrateObsoleteOnDiskResult.from_dict(obj.get("UserSettingsMigrateObsoleteOnDiskResult"))
+        user_settings_migrate_obsolete_on_disk_status = _UserSettingsMigrateObsoleteOnDiskStatus(obj.get("UserSettingsMigrateObsoleteOnDiskStatus"))
+        user_settings_migrate_staff_log_level_once_request = _UserSettingsMigrateStaffLogLevelOnceRequest.from_dict(obj.get("UserSettingsMigrateStaffLogLevelOnceRequest"))
+        user_settings_migrate_staff_log_level_once_result = _UserSettingsMigrateStaffLogLevelOnceResult.from_dict(obj.get("UserSettingsMigrateStaffLogLevelOnceResult"))
+        user_settings_migrate_staff_update_channel_once_result = _UserSettingsMigrateStaffUpdateChannelOnceResult.from_dict(obj.get("UserSettingsMigrateStaffUpdateChannelOnceResult"))
         user_settings_normalize_request = UserSettingsNormalizeRequest.from_dict(obj.get("UserSettingsNormalizeRequest"))
         user_settings_normalize_result = UserSettingsNormalizeResult.from_dict(obj.get("UserSettingsNormalizeResult"))
+        user_settings_path_result = UserSettingsPathResult.from_dict(obj.get("UserSettingsPathResult"))
         user_settings_problem = UserSettingsProblem.from_dict(obj.get("UserSettingsProblem"))
         user_settings_problem_location = UserSettingsProblemLocation.from_dict(obj.get("UserSettingsProblemLocation"))
         user_settings_problem_source = UserSettingsProblemSource.from_dict(obj.get("UserSettingsProblemSource"))
         user_settings_problems_request = UserSettingsProblemsRequest.from_dict(obj.get("UserSettingsProblemsRequest"))
         user_settings_problems_result = UserSettingsProblemsResult.from_dict(obj.get("UserSettingsProblemsResult"))
+        user_settings_reset_staff_model_selection_once_request = _UserSettingsResetStaffModelSelectionOnceRequest.from_dict(obj.get("UserSettingsResetStaffModelSelectionOnceRequest"))
+        user_settings_reset_staff_model_selection_once_result = _UserSettingsResetStaffModelSelectionOnceResult.from_dict(obj.get("UserSettingsResetStaffModelSelectionOnceResult"))
+        user_settings_set_hook_disabled_request = _UserSettingsSetHookDisabledRequest.from_dict(obj.get("UserSettingsSetHookDisabledRequest"))
+        user_settings_set_hook_disabled_result = _UserSettingsSetHookDisabledResult.from_dict(obj.get("UserSettingsSetHookDisabledResult"))
         user_settings_set_request = UserSettingsSetRequest.from_dict(obj.get("UserSettingsSetRequest"))
+        user_settings_unknown_keys_warning_request = _UserSettingsUnknownKeysWarningRequest.from_dict(obj.get("UserSettingsUnknownKeysWarningRequest"))
+        user_settings_unknown_keys_warning_result = _UserSettingsUnknownKeysWarningResult.from_dict(obj.get("UserSettingsUnknownKeysWarningResult"))
         user_settings_update_request = _UserSettingsUpdateRequest.from_dict(obj.get("UserSettingsUpdateRequest"))
         user_settings_update_result = _UserSettingsUpdateResult.from_dict(obj.get("UserSettingsUpdateResult"))
         user_settings_validate_request = UserSettingsValidateRequest.from_dict(obj.get("UserSettingsValidateRequest"))
@@ -54942,7 +57934,7 @@ class RPC:
         subagent_settings = from_union([SubagentSettings.from_dict, from_none], obj.get("SubagentSettings"))
         task_progress = from_union([TaskProgress.from_dict, from_none], obj.get("TaskProgress"))
         workspace_summary = from_union([WorkspaceSummary.from_dict, from_none], obj.get("WorkspaceSummary"))
-        return RPC(abort_request, abort_result, accepted_enqueue_command_result, account_all_users, account_auth_info, account_describe_auth_info_request, account_describe_auth_info_result, account_get_all_users_result, account_get_current_auth_result, account_get_gist_support_request, account_get_gist_support_result, account_get_quota_request, account_get_quota_result, account_get_token_env_var_result, account_get_web_url_request, account_get_web_url_result, account_kind, account_login_request, account_login_result, account_logout_request, account_logout_result, account_quota_snapshot, accounts_enumerate_request, accounts_get_request, accounts_set_request, account_status, adaptive_thinking_support, agent_discovery_path, agent_discovery_path_list, agent_discovery_path_scope, agent_get_current_result, agent_info, agent_info_source, agent_list, agent_list_request, agent_registry_live_target_entry, agent_registry_live_target_entry_attention_kind, agent_registry_live_target_entry_kind, agent_registry_live_target_entry_last_terminal_event, agent_registry_live_target_entry_status, agent_registry_log_capture, agent_registry_log_capture_open_error_reason, agent_registry_spawn_error, agent_registry_spawn_permission_mode, agent_registry_spawn_registry_timeout, agent_registry_spawn_request, agent_registry_spawn_result, agent_registry_spawn_spawned, agent_registry_spawn_validation_error, agent_registry_spawn_validation_error_field, agent_registry_spawn_validation_error_reason, agent_reload_result, agents_custom_agent_initial_model_decision_params, agents_custom_agent_initial_model_decision_result, agents_discover_request, agent_select_request, agent_select_result, agent_set_prompt_request, agents_get_available_builtins_request, agents_get_available_builtins_result, agents_get_builtin_definition_request, agents_get_builtin_definition_result, agents_get_builtin_listing_definition_request, agents_get_builtin_listing_definition_result, agents_get_builtins_result, agents_get_discovery_paths_request, api_key_auth_info, auth_enumerate_query, auth_enumerate_value, auth_identity, auth_identity_metadata, auth_info, auth_info_type, auth_login_account, auth_login_advance_request, auth_login_begin_request, auth_login_begun, auth_login_cancel_request, auth_login_result_dto, auth_login_result_status, auth_login_step, auth_read_query, auth_read_value, auth_status_dto, auth_validation_error, auth_validation_errors, auth_write, auth_write_result, autopilot_objective_credit_limit, autopilot_objective_get_state_result, autopilot_objective_state, autopilot_objective_status, auto_tier_descriptor, auto_tier_metadata, auto_tier_status, builtin_agent_summary, built_in_model_catalog, built_in_model_catalog_entry, builtin_tool_descriptor, builtin_tool_format, builtin_tool_format_type, builtin_tool_input_schema, builtin_tool_input_schema_type, builtin_tool_safe_for_telemetry, builtin_tool_safe_telemetry_fields, cancel_user_requested_shell_command_result, canvas_action, canvas_action_invoke_request, canvas_action_invoke_result, canvas_close_request, canvas_host_context, canvas_host_context_capabilities, canvas_json_schema, canvas_list, canvas_list_open_result, canvas_open_request, canvas_provider_close_request, canvas_provider_invoke_action_request, canvas_provider_open_request, canvas_provider_open_result, canvas_provider_register_request, canvas_provider_unregister_request, canvas_session_context, capi_session_options, card_digest, card_digest_algorithm, card_digest_value, catalog_agent_plugin_candidate, catalog_agent_plugin_candidate_kind, catalog_agent_plugin_candidate_provenance, catalog_agent_plugin_compatibility_tag, catalog_agent_plugin_media_type, catalog_ai_skill_candidate, catalog_ai_skill_candidate_kind, catalog_ai_skill_candidate_provenance, catalog_ai_skill_installability, catalog_ai_skill_media_type, catalog_authentication_required_error, catalog_authentication_required_reason, catalog_candidate, catalog_candidate_kind, catalog_candidate_source, catalog_candidate_source_embedded, catalog_candidate_source_url, catalog_capability, catalog_capability_id, catalog_client_contract, catalog_contract_violation_error, catalog_contract_violation_reason, catalog_handle_rejected_error, catalog_handle_rejection_reason, catalog_handle_type, catalog_invalid_request_error, catalog_invalid_request_field, catalog_malformed_card_error, catalog_malformed_card_reason, catalog_mcp_server_candidate, catalog_mcp_server_candidate_kind, catalog_mcp_server_candidate_provenance, catalog_mcp_server_installability, catalog_media_type, catalog_negotiated_contract, catalog_negotiation_refused_error, catalog_negotiation_refused_reason, catalog_network_failure_error, catalog_network_failure_reason, catalog_not_installable_error, catalog_not_installable_reason, catalog_plugin_repository_source, catalog_policy_rejected_error, catalog_resource_identity, catalog_resource_version, catalog_search_page, catalog_search_pagination, catalog_search_request, catalog_search_result, catalog_search_succeeded, catalog_search_total_count_relation, catalog_selection_cancelled, catalog_selection_decision, catalog_selection_declined, catalog_selection_foreign, catalog_selection_invalid, catalog_selection_replayed, catalog_selection_request, catalog_selection_result, catalog_selection_selected, catalog_selection_stale, catalog_selection_timed_out, catalog_selection_wrong_kind, catalog_trust_eligibility, catalog_trust_provenance, catalog_trust_snapshot, catalog_trust_snapshot_absent, catalog_trust_snapshot_absent_status, catalog_trust_snapshot_current, catalog_trust_snapshot_current_status, catalog_trust_snapshot_downgraded, catalog_trust_snapshot_downgraded_status, catalog_trust_snapshot_malformed, catalog_trust_snapshot_malformed_status, catalog_trust_snapshot_revoked, catalog_trust_snapshot_revoked_status, catalog_trust_snapshot_schema_version, catalog_trust_snapshot_stale, catalog_trust_snapshot_stale_status, catalog_trust_snapshot_unsupported, catalog_trust_snapshot_unsupported_status, catalog_trust_source, catalog_trust_tier, catalog_unavailable_error, catalog_unavailable_reason, catalog_unavailable_transport_error, catalog_unavailable_transport_reason, catalog_unsafe_retrieval_error, catalog_unsafe_retrieval_reason, catalog_unsupported_kind_error, client_metadata, client_task_cancel_reason, client_task_cancel_request, client_task_cancel_result, command_list, commands_finalize_invocation_effect_request, commands_finalize_invocation_effect_result, commands_handle_pending_command_request, commands_handle_pending_command_result, commands_invocation_effect_outcome, commands_invocation_origin, commands_invoke_request, commands_list_request, commands_respond_to_queued_command_request, commands_respond_to_queued_command_result, completions_get_trigger_characters_result, completions_request_request, completions_request_result, configure_session_extensions_params, connect_client_info, connected_remote_session_metadata, connected_remote_session_metadata_kind, connected_remote_session_metadata_repository, connector_account_request, connector_authorization_requirement, connector_authorization_scope, connector_availability, connector_capabilities, connector_catalog_entry, connector_catalog_result, connector_catalog_status, connector_connect_request, connector_connect_result, connector_continue_request, connector_disconnect_result, connector_discovery_account, connector_discovery_account_list, connector_discovery_account_request, connector_discovery_auth_info, connector_discovery_availability, connector_discovery_capabilities, connector_discovery_catalog_entry, connector_discovery_catalog_result, connector_mcp_status, connector_reconcile_request, connector_runtime_status, connector_session_account, connector_status, connect_remote_session_params, connect_request, connect_result, content_exclusion_check_paths_request, content_exclusion_check_paths_result, content_exclusion_path_check, content_filter_mode, context_heaviest_message, copilot_api_token_auth_info, copilot_user_response, copilot_user_response_endpoints, copilot_user_response_quota_snapshots, copilot_user_response_quota_snapshots_chat, copilot_user_response_quota_snapshots_completions, copilot_user_response_quota_snapshots_premium_interactions, current_model, current_tool_metadata, customization_reload_outcome, customization_reload_status, customization_reload_subsystem, customizations_reload_result, debug_collect_logs_collected_entry, debug_collect_logs_destination, debug_collect_logs_entry, debug_collect_logs_entry_kind, debug_collect_logs_include, debug_collect_logs_redaction, debug_collect_logs_request, debug_collect_logs_result, debug_collect_logs_result_kind, debug_collect_logs_skipped_entry, debug_collect_logs_source, diagnostic_cursor_status, diagnostic_entry, diagnostic_log_level, diagnostics_configuration, diagnostics_configure_request, diagnostic_severity, diagnostic_source, diagnostic_sources_configuration, diagnostics_read_request, diagnostics_read_result, discovered_canvas, discovered_extension, discovered_extension_mode, discovered_extension_plugin, discovered_extensions, discovered_extensions_disable_request, discovered_extensions_enable_request, discovered_extension_source, discovered_hook, discovered_mcp_server, discovered_mcp_server_type, discovered_model, discovered_model_list, enqueue_command_params, enqueue_command_result, env_auth_info, environment_capabilities, environment_kind, environments_delete_request, environments_delete_result, environments_get_request, environments_get_result, environments_list_request, environments_list_result, event_log_read_request, event_log_release_interest_result, event_log_tail_result, event_log_types, events_agent_scope, events_cursor_status, events_read_direction, events_read_result, execute_command_params, execute_command_result, extension, extension_context_push_input, extension_launch_profile, extension_launch_provider_resolve_request, extension_launch_provider_resolve_result, extension_list, extensions_disable_request, extensions_enable_request, extension_source, extension_status, external_tool_result, external_tool_text_result_for_llm, external_tool_text_result_for_llm_binary_results_for_llm, external_tool_text_result_for_llm_binary_results_for_llm_type, external_tool_text_result_for_llm_content, external_tool_text_result_for_llm_content_audio, external_tool_text_result_for_llm_content_image, external_tool_text_result_for_llm_content_resource, external_tool_text_result_for_llm_content_resource_details, external_tool_text_result_for_llm_content_resource_link, external_tool_text_result_for_llm_content_resource_link_icon, external_tool_text_result_for_llm_content_resource_link_icon_theme, external_tool_text_result_for_llm_content_shell_exit, external_tool_text_result_for_llm_content_terminal, external_tool_text_result_for_llm_content_text, feature_flag_availability, feature_flag_metadata, feature_flags_metadata_result, feature_flags_resolve_request, feature_flags_resolve_result, filter_mapping, fleet_start_request, fleet_start_result, folder_trust_add_params, folder_trust_check_params, folder_trust_check_result, gh_cli_auth_info, git_current_branch_remote_result, git_cwd_request, git_hub_environment, git_hub_owner_option, git_hub_owners_cancel_request, git_hub_owners_cancel_result, git_hub_owners_list_request, git_hub_owners_list_result, git_hub_owners_request_id_result, git_hub_repository_at_path_request, git_hub_repository_at_path_result, git_hub_repository_identity, git_hub_telemetry_client_info, git_hub_telemetry_event, git_hub_telemetry_notification, git_hub_token_acquire_reason, git_hub_token_acquire_request, git_hub_token_acquire_result, git_remote_repository, git_repos_from_remotes_request, git_repos_from_remotes_result, global_state_load_for_config_dir_request, global_state_load_result, global_state_write_key_request, handle_pending_tool_call_request, handle_pending_tool_call_result, history_abort_manual_compaction_result, history_cancel_background_compaction_result, history_clear_context_request, history_clear_context_result, history_compact_context_window, history_compact_request, history_compact_result, history_file_restore_skip_reason, history_list_rewind_points_result, history_preview_rewind_request, history_preview_rewind_result, history_rewind_change_type, history_rewind_file_preview, history_rewind_mode, history_rewind_outcome, history_rewind_point, history_rewind_request, history_rewind_result, history_rewind_unavailable_reason, history_skipped_file_restore, history_summarize_for_handoff_result, history_truncate_request, history_truncate_result, hmac_auth_info, hook_invoke_request, hook_invoke_response, hook_origin, hooks_discover_request, hooks_discover_result, hook_type, host_configuration, host_dispose_request, host_empty_result, host_environment_credentials, host_exited_notification, host_exit_reason, host_git_hub_environment_options, host_list_sessions_request, host_list_sessions_result, host_local_server_configuration, host_local_server_options, host_publish_session_request, host_publish_session_result, host_ready_request, host_register_session_request, host_session_create_callback, host_session_create_request, host_session_create_result, host_session_released_notification, host_session_release_request, host_session_summary, host_start_request, host_start_result, installation_catalogue_identity, installation_confirmation_request, installation_confirmation_response, installation_decision, installation_review, installed_plugin, installed_plugin_info, installed_plugin_source, installed_plugin_source_git_hub, installed_plugin_source_local, installed_plugin_source_url, instruction_discovery_path, instruction_discovery_path_kind, instruction_discovery_path_list, instruction_discovery_path_location, instructions_discover_repo_sources_request, instructions_discover_request, instructions_get_discovery_paths_request, instructions_get_sources_result, instructions_init_prompt_result, instruction_source, instruction_source_location, instruction_source_type, interrupt_main_turn_request, interrupt_main_turn_result, json_schema_response_format, llm_inference_headers, llm_inference_http_request_chunk_request, llm_inference_http_request_chunk_result, llm_inference_http_request_start_request, llm_inference_http_request_start_result, llm_inference_http_request_start_transport, llm_inference_http_response_chunk_error, llm_inference_http_response_chunk_request, llm_inference_http_response_chunk_result, llm_inference_http_response_start_request, llm_inference_http_response_start_result, llm_inference_set_provider_result, local_session_metadata_value, logged_in_user, login_provider_kind, log_request, log_result, lsp_initialize_request, managed_mcp_server_config, managed_permission_evaluation, managed_permission_operation, managed_permission_operation_kind, managed_permissions_evaluate_request, managed_permissions_evaluate_result, managed_permission_verdict, managed_plugin_retry_entry, managed_plugin_retry_status, managed_setting_meta, managed_settings_channel, managed_settings_compose_layer, managed_settings_compose_request, managed_settings_compose_result, managed_settings_diagnostic, managed_settings_diagnostic_severity, managed_settings_layer, managed_settings_meta, managed_settings_read_result, managed_settings_resolved_data, managed_settings_resolve_request, managed_settings_resolve_result, managed_settings_schema_result, managed_settings_validate_request, managed_settings_validate_result, managed_settings_values, marketplace_add_result, marketplace_browse_result, marketplace_info, marketplace_list_result, marketplace_plugin_info, marketplace_refresh_entry, marketplace_refresh_result, marketplace_remove_result, mcp_allowed_server, mcp_apply_install_request, mcp_apply_uninstall_request, mcp_apps_call_tool_request, mcp_apps_diagnose_capability, mcp_apps_diagnose_request, mcp_apps_diagnose_result, mcp_apps_diagnose_server, mcp_apps_host_context, mcp_apps_host_context_details, mcp_apps_host_context_details_available_display_mode, mcp_apps_host_context_details_display_mode, mcp_apps_host_context_details_platform, mcp_apps_host_context_details_theme, mcp_apps_list_tools_request, mcp_apps_list_tools_result, mcp_apps_read_resource_request, mcp_apps_read_resource_result, mcp_apps_resource_content, mcp_apps_set_host_context_details, mcp_apps_set_host_context_details_available_display_mode, mcp_apps_set_host_context_details_display_mode, mcp_apps_set_host_context_details_platform, mcp_apps_set_host_context_details_theme, mcp_apps_set_host_context_request, mcp_cancel_sampling_execution_params, mcp_cancel_sampling_execution_result, mcp_config_add_request, mcp_config_disable_request, mcp_config_enable_request, mcp_config_list, mcp_config_remove_request, mcp_config_update_request, mcp_configured_server, mcp_configured_server_list, mcp_configured_server_state, mcp_configure_git_hub_request, mcp_configure_git_hub_result, mcp_diagnostic_details, mcp_diagnostic_direction, mcp_diagnostic_kind, mcp_diagnostic_source_configuration, mcp_disable_request, mcp_discover_request, mcp_discover_result, mcp_elicitation_form_mode, mcp_enable_request, mcp_execute_sampling_params, mcp_execute_sampling_request, mcp_execute_sampling_result, mcp_failed_server, mcp_filtered_server, mcp_headers_handle_pending_headers_refresh_request, mcp_headers_handle_pending_headers_refresh_request_request, mcp_headers_handle_pending_headers_refresh_request_result, mcp_host_state, mcp_installation_failure_reason, mcp_installation_input, mcp_installation_management_outcome, mcp_installation_management_result, mcp_installation_operation_request, mcp_installation_operation_status, mcp_installation_outcome, mcp_installation_remote_configuration, mcp_installation_result, mcp_installation_review, mcp_installation_secret, mcp_installation_secret_storage, mcp_installations_request, mcp_installation_state, mcp_installation_summary, mcp_install_plan, mcp_is_server_running_request, mcp_is_server_running_result, mcp_list_builtin_server_names_result, mcp_list_tools_request, mcp_list_tools_result, mcp_oauth_authentication_state_changed_request, mcp_oauth_cancel_login_request, mcp_oauth_cancel_login_result, mcp_oauth_complete_request, mcp_oauth_handle_pending_request, mcp_oauth_handle_pending_result, mcp_oauth_login_grant_type, mcp_oauth_login_request, mcp_oauth_login_result, mcp_oauth_pending_request_response, mcp_oauth_prepare_login_request, mcp_oauth_prepare_login_result, mcp_oauth_probe_needs_auth_reason, mcp_oauth_probe_request, mcp_oauth_probe_result, mcp_oauth_respond_request, mcp_oauth_respond_result, mcp_owned_oauth_login_status, mcp_plan_configuration_change, mcp_plan_configuration_operation, mcp_plan_enum_value_type, mcp_plan_install_planned, mcp_plan_install_request, mcp_plan_install_result, mcp_plan_install_source, mcp_plan_install_source_candidate, mcp_plan_install_source_candidate_kind, mcp_plan_install_source_card, mcp_plan_install_source_card_kind, mcp_plan_package_install_method, mcp_plan_package_transport, mcp_plan_policy_decision, mcp_plan_policy_result, mcp_plan_policy_source, mcp_plan_provenance, mcp_plan_remote_install_method, mcp_plan_remote_transport, mcp_plan_required_value, mcp_plan_required_value_enum, mcp_plan_required_value_enum_kind, mcp_plan_required_value_scalar, mcp_plan_required_value_scalar_kind, mcp_plan_resource_identity, mcp_plan_scalar_value_type, mcp_plan_scope, mcp_plan_secret_placeholder, mcp_plan_secret_reference, mcp_plan_target, mcp_plan_transport_choice, mcp_plan_transport_choice_package, mcp_plan_transport_choice_remote, mcp_plan_uninstall_request, mcp_plan_value_category, mcp_prepared_install, mcp_prepare_install_request, mcp_prompt, mcp_prompt_argument, mcp_prompt_icon, mcp_prompt_message, mcp_prompt_role, mcp_prompts_get_request, mcp_prompts_get_result, mcp_prompts_list_request, mcp_prompts_list_result, mcp_register_external_client_request, mcp_registry_cancel_request, mcp_registry_cancel_result, mcp_registry_request_id_result, mcp_registry_search_request, mcp_registry_search_result, mcp_reload_config, mcp_reload_with_config_request, mcp_remove_git_hub_result, mcp_resource, mcp_resource_annotations, mcp_resource_content, mcp_resource_icon, mcp_resources_list_request, mcp_resources_list_result, mcp_resources_list_templates_request, mcp_resources_list_templates_result, mcp_resources_read_request, mcp_resources_read_result, mcp_resource_template, mcp_restart_server_request, mcp_safe_for_telemetry, mcp_safe_for_telemetry_fields, mcp_sampling_execution_action, mcp_sampling_execution_result, mcp_serializable_server_config, mcp_server, mcp_server_auth_config, mcp_server_auth_config_redirect_port, mcp_server_card_embedded, mcp_server_card_embedded_kind, mcp_server_card_media_type, mcp_server_card_reference, mcp_server_card_url, mcp_server_card_url_kind, mcp_server_config, mcp_server_config_defer_tools, mcp_server_config_http, mcp_server_config_http_oauth_grant_type, mcp_server_config_http_type, mcp_server_config_memory, mcp_server_config_memory_type, mcp_server_config_stdio, mcp_server_config_stdio_type, mcp_server_failure_info, mcp_server_list, mcp_server_needs_auth_info, mcp_server_ownership, mcp_set_env_value_mode_details, mcp_set_env_value_mode_params, mcp_set_env_value_mode_result, mcp_should_exclude_git_hub_tools_request, mcp_should_exclude_git_hub_tools_result, mcp_source_file, mcp_source_plugin, mcp_source_ref, mcp_start_server_request, mcp_start_servers_result, mcp_stop_server_request, mcp_task_metadata, mcp_tools, mcp_tool_ui, mcp_tool_ui_visibility, mcp_uninstall_plan, mcp_unregister_external_client_request, memory_configuration, metadata_context_attribution_result, metadata_context_heaviest_messages_request, metadata_context_heaviest_messages_result, metadata_context_info_request, metadata_context_info_result, metadata_is_processing_result, metadata_recompute_context_tokens_request, metadata_recompute_context_tokens_result, metadata_record_context_change_request, metadata_record_context_change_result, metadata_set_working_directory_request, metadata_set_working_directory_result, metadata_snapshot_current_mode, metadata_snapshot_remote_metadata, metadata_snapshot_remote_metadata_repository, metadata_snapshot_remote_metadata_task_type, metadata_update_client_metadata_request, model, model_apply_startup_overlay_request, model_artifact_details, model_billing, model_billing_promo, model_billing_token_prices, model_billing_token_prices_long_context, model_capabilities, model_capabilities_limits, model_capabilities_limits_vision, model_capabilities_override, model_capabilities_override_limits, model_capabilities_override_limits_vision, model_capabilities_override_supports, model_capabilities_supports, model_clear_startup_seed_request, model_clear_startup_seed_result, model_get_reasoning_summaries_request, model_get_reasoning_summaries_result, model_list, model_list_request, model_message, model_picker_category, model_picker_persistence_request, model_picker_price_category, model_picker_settings_context, model_policy, model_policy_state, model_provider_adapter_catalog, model_provider_adapter_descriptor, model_provider_adapter_operation_descriptor, model_provider_attribution, model_provider_automatic_discovery_mode, model_provider_automatic_discovery_policy, model_provider_configuration_disposition, model_provider_configuration_plan, model_provider_descriptor, model_provider_discover_request, model_provider_discover_result, model_provider_discovery_network_scope, model_provider_get_status_request, model_provider_instance, model_provider_instance_reference, model_provider_models_list_request, model_provider_operation_outcome, model_provider_operation_outcome_code, model_provider_prepare_configuration_request, model_provider_provenance, model_provider_provenance_source, model_provider_status, model_provider_warning, model_set_allowed_models_request, model_set_allowed_models_result, model_set_reasoning_effort_request, model_set_reasoning_effort_result, models_list_request, model_switch_auto_tier_request, model_switch_auto_tier_result, model_switch_auto_tier_status, model_switch_confirmation, model_switch_to_request, model_switch_to_result, model_warning_text, mode_set_request, mode_set_result, move_mcp_loading_to_background_result, named_provider_config, name_get_result, name_set_auto_request, name_set_auto_result, name_set_request, open_canvas_instance, options_update_additional_content_exclusion_policy, options_update_additional_content_exclusion_policy_rule, options_update_additional_content_exclusion_policy_rule_source, options_update_additional_content_exclusion_policy_scope, options_update_context_tier, options_update_env_value_mode, options_update_reasoning_summary, options_update_tool_filter_precedence, pending_external_tool_request, pending_external_tool_request_list, pending_permission_request, pending_permission_request_list, permission_decision, permission_decision_approved, permission_decision_approved_for_location, permission_decision_approved_for_session, permission_decision_approve_for_location, permission_decision_approve_for_location_approval, permission_decision_approve_for_location_approval_commands, permission_decision_approve_for_location_approval_custom_tool, permission_decision_approve_for_location_approval_extension_env_access, permission_decision_approve_for_location_approval_extension_management, permission_decision_approve_for_location_approval_extension_permission_access, permission_decision_approve_for_location_approval_mcp, permission_decision_approve_for_location_approval_mcp_sampling, permission_decision_approve_for_location_approval_memory, permission_decision_approve_for_location_approval_read, permission_decision_approve_for_location_approval_workflow, permission_decision_approve_for_location_approval_write, permission_decision_approve_for_session, permission_decision_approve_for_session_approval, permission_decision_approve_for_session_approval_commands, permission_decision_approve_for_session_approval_custom_tool, permission_decision_approve_for_session_approval_extension_env_access, permission_decision_approve_for_session_approval_extension_management, permission_decision_approve_for_session_approval_extension_permission_access, permission_decision_approve_for_session_approval_mcp, permission_decision_approve_for_session_approval_mcp_sampling, permission_decision_approve_for_session_approval_memory, permission_decision_approve_for_session_approval_read, permission_decision_approve_for_session_approval_workflow, permission_decision_approve_for_session_approval_write, permission_decision_approve_once, permission_decision_approve_permanently, permission_decision_approve_read_only_for_session, permission_decision_cancelled, permission_decision_context, permission_decision_denied_by_content_exclusion_policy, permission_decision_denied_by_permission_request_hook, permission_decision_denied_by_rules, permission_decision_denied_interactively_by_user, permission_decision_denied_no_approval_rule_and_could_not_request_from_user, permission_decision_outcome, permission_decision_reject, permission_decision_request, permission_decision_surface, permission_decision_user_not_available, permission_location_add_tool_approval_params, permission_location_apply_params, permission_location_apply_result, permission_location_resolve_params, permission_location_resolve_result, permission_location_type, permission_mode_source, permission_paths_add_params, permission_paths_allowed_check_params, permission_paths_allowed_check_result, permission_paths_config, permission_paths_list, permission_paths_update_primary_params, permission_paths_workspace_check_params, permission_paths_workspace_check_result, permission_prompt_shown_notification, permission_request_result, permission_response_capability, permission_rules_set, permissions_configure_additional_content_exclusion_policy, permissions_configure_additional_content_exclusion_policy_rule, permissions_configure_additional_content_exclusion_policy_rule_source, permissions_configure_additional_content_exclusion_policy_scope, permissions_configure_params, permissions_configure_result, permissions_folder_trust_add_trusted_result, permissions_get_mode_request, permissions_get_mode_result, permissions_locations_add_tool_approval_details, permissions_locations_add_tool_approval_details_commands, permissions_locations_add_tool_approval_details_custom_tool, permissions_locations_add_tool_approval_details_extension_env_access, permissions_locations_add_tool_approval_details_extension_management, permissions_locations_add_tool_approval_details_extension_permission_access, permissions_locations_add_tool_approval_details_mcp, permissions_locations_add_tool_approval_details_mcp_sampling, permissions_locations_add_tool_approval_details_memory, permissions_locations_add_tool_approval_details_read, permissions_locations_add_tool_approval_details_workflow, permissions_locations_add_tool_approval_details_write, permissions_locations_add_tool_approval_result, permissions_modify_rules_params, permissions_modify_rules_result, permissions_modify_rules_scope, permissions_notify_prompt_shown_result, permissions_paths_add_result, permissions_paths_list_request, permissions_paths_update_primary_result, permissions_pending_requests_request, permissions_reset_session_approvals_request, permissions_reset_session_approvals_result, permissions_set_approve_all_request, permissions_set_approve_all_result, permissions_set_approve_all_source, permissions_set_mode_request, permissions_set_mode_result, permissions_set_required_request, permissions_set_required_result, permissions_urls_set_unrestricted_mode_result, permission_urls_config, permission_urls_set_unrestricted_mode_params, ping_request, ping_result, plan_read_result, plan_read_sql_todos_result, plan_read_sql_todos_with_dependencies_result, plan_sql_todo_dependency, plan_sql_todos_row, plan_update_request, plugin, plugin_install_result, plugin_install_staging_mode, plugin_list, plugin_list_result, plugins_builtin_set_request, plugins_disable_request, plugins_enable_request, plugins_install_request, plugins_marketplaces_add_request, plugins_marketplaces_browse_request, plugins_marketplaces_refresh_request, plugins_marketplaces_remove_request, plugins_reload_request, plugins_uninstall_request, plugins_update_request, plugin_update_all_entry, plugin_update_all_result, plugin_update_result, protocol_append_mode, protocol_customize_mode, protocol_external_tool_defer, protocol_external_tool_definition, protocol_marker_section_override, protocol_replace_mode, protocol_section_override, protocol_static_section_action, protocol_static_section_override, protocol_system_message_append_config, protocol_system_message_config, protocol_system_message_customize_config, protocol_system_message_replace_config, provider_add_request, provider_add_result, provider_config, provider_config_azure, provider_config_model_provider, provider_config_transport, provider_config_type, provider_config_wire_api, provider_descriptor, provider_endpoint, provider_endpoint_transport, provider_endpoint_type, provider_endpoint_wire_api, provider_get_endpoint_request, provider_model_config, provider_session_token, provider_sync_request, provider_sync_result, provider_token_acquire_request, provider_token_acquire_result, provider_withdraw_request, provider_withdraw_result, push_attachment, push_attachment_blob, push_attachment_directory, push_attachment_file, push_attachment_file_line_range, push_attachment_git_hub_actions_job, push_attachment_git_hub_commit, push_attachment_git_hub_file, push_attachment_git_hub_file_diff, push_attachment_git_hub_file_diff_side, push_attachment_git_hub_reference, push_attachment_git_hub_reference_type, push_attachment_git_hub_release, push_attachment_git_hub_repository, push_attachment_git_hub_snippet, push_attachment_git_hub_tree_comparison, push_attachment_git_hub_tree_comparison_side, push_attachment_git_hub_url, push_attachment_selection, push_attachment_selection_details, push_attachment_selection_details_end, push_attachment_selection_details_start, push_git_hub_repo_ref, queue_append_steering_request, queue_begin_deferred_idle_drain_request, queue_begin_deferred_idle_drain_result, queue_consume_system_notifications_request, queued_command_handled, queued_command_not_handled, queued_command_result, queue_defer_session_idle_request, queue_duplicate_at_request, queue_duplicate_at_result, queue_enqueue_resume_pending_result, queue_finish_deferred_idle_drain_request, queue_finish_deferred_idle_drain_result, queue_has_pending_result, queue_insert_at_request, queue_insert_at_result, queue_insert_message, queue_move_item_request, queue_move_item_result, queue_pending_items, queue_pending_items_kind, queue_pending_items_result, queue_remove_at_request, queue_remove_at_result, queue_remove_most_recent_result, queue_send_now_request, queue_send_now_result, queue_set_drain_paused_request, queue_snapshot_result, queue_update_text_request, queue_update_text_result, queue_withdraw_message_request, queue_withdraw_message_result, quota_take_warnings_result, quota_warning_projection, register_event_interest_params, register_event_interest_result, release_event_interest_params, remote_control_config, remote_control_config_existing_mc_session, remote_control_status, remote_control_status_active, remote_control_status_connecting, remote_control_status_error, remote_control_status_off, remote_control_status_result, remote_control_stop_result, remote_control_transfer_result, remote_enable_request, remote_enable_result, remote_notify_steerable_changed_request, remote_notify_steerable_changed_result, remote_session_connection_result, remote_session_host_status, remote_session_metadata_repository, remote_session_metadata_task_type, remote_session_metadata_value, remote_session_mode, remote_session_repository, repo_settings_read_raw_request, repo_settings_read_raw_result, repo_settings_write_all_request, repo_settings_write_key_request, response_format, sandbox_config, sandbox_config_auth, sandbox_config_source, sandbox_config_user_policy, sandbox_config_user_policy_experimental, sandbox_config_user_policy_experimental_seatbelt, sandbox_config_user_policy_filesystem, sandbox_config_user_policy_network, sandbox_config_user_policy_network_proxy, sandbox_config_user_policy_seatbelt, sandbox_credentials_config, sandbox_credential_suggestion, sandbox_credential_suggestions_result, sandbox_disable_for_session_request, sandbox_disable_for_session_result, sandbox_enforcement_status, sandbox_grant_path_for_request_request, sandbox_grant_path_for_request_result, sandbox_host_capability, sandbox_host_capability_name, sandbox_host_support, sandbox_masked_env_var, sandbox_proxy_ca_create_result, sandbox_proxy_ca_request, sandbox_proxy_ca_state, sandbox_proxy_ca_status, sandbox_session_change, schedule_add_at_request, schedule_add_cron_request, schedule_add_request, schedule_add_result, schedule_add_self_paced_request, schedule_entry, schedule_has_self_paced_result, schedule_list, schedule_rearm_self_paced_request, schedule_stop_request, schedule_stop_result, secrets_add_filter_values_request, secrets_add_filter_values_result, send_agent_mode, send_attachments_to_message_params, send_message_item, send_messages_request, send_messages_result, send_mode, send_request, send_result, send_system_notification_request, server_agent_list, server_instruction_source_list, server_skill, server_skill_list, session_activity, session_agent_list_request, session_auth_login_request, session_auth_logout_user_request, session_auth_status, session_auth_switch_request, session_bulk_delete_result, session_cancel_all_background_agents_result, session_capability, session_commands_list_request, session_completion_item, session_connected_ide_info, session_context, session_context_host_type, session_enrich_metadata_result, session_fs_append_file_request, session_fs_error, session_fs_error_code, session_fs_exists_request, session_fs_exists_result, session_fs_mkdir_request, session_fs_readdir_request, session_fs_readdir_result, session_fs_readdir_with_types_entry, session_fs_readdir_with_types_entry_type, session_fs_readdir_with_types_request, session_fs_readdir_with_types_result, session_fs_read_file_bytes_request, session_fs_read_file_bytes_result, session_fs_read_file_request, session_fs_read_file_result, session_fs_rename_request, session_fs_rm_request, session_fs_set_provider_capabilities, session_fs_set_provider_conventions, session_fs_set_provider_request, session_fs_set_provider_result, session_fs_sqlite_exists_request, session_fs_sqlite_exists_result, session_fs_sqlite_query_request, session_fs_sqlite_query_result, session_fs_sqlite_query_type, session_fs_sqlite_transaction_error, session_fs_sqlite_transaction_error_class, session_fs_sqlite_transaction_request, session_fs_sqlite_transaction_result, session_fs_sqlite_transaction_statement, session_fs_stat_request, session_fs_stat_result, session_fs_write_file_bytes_request, session_fs_write_file_request, session_git_hub_auth_get_all_auth_available_result, session_git_hub_auth_logout_result, session_git_hub_auth_logout_user_result, session_history_compact_request, session_installed_plugin, session_installed_plugin_source, session_installed_plugin_source_git_hub, session_installed_plugin_source_local, session_installed_plugin_source_url, session_limit_prediction_baseline_data, session_limit_prediction_client_type, session_limit_prediction_details, session_limit_prediction_predict_request, session_limit_prediction_request, session_limit_prediction_result, session_limit_prediction_source, session_limit_prediction_tier, session_limit_prediction_tier_option, session_limit_prediction_unavailable_reason, session_list, session_list_entry, session_list_filter, session_load_deferred_repo_hooks_result, session_log_level, session_managed_permissions, session_managed_settings, session_mcp_apps_call_tool_result, session_mcp_oauth_cancel_login_request, session_mcp_oauth_cancel_login_result, session_mcp_oauth_prepare_login_request, session_mcp_oauth_prepare_login_result, session_mcp_set_connected_ide_info_params, session_metadata_snapshot, session_mode, session_model_clear_startup_seed_request, session_model_clear_startup_seed_result, session_model_list, session_model_list_request, session_model_price_category, session_open_options, session_open_options_additional_content_exclusion_policy, session_open_options_additional_content_exclusion_policy_rule, session_open_options_additional_content_exclusion_policy_rule_source, session_open_options_additional_content_exclusion_policy_scope, session_open_options_env_value_mode, session_open_options_reasoning_summary, session_open_params, session_open_result, session_plugins_disable_request, session_plugins_enable_request, session_plugins_install_request, session_plugins_marketplaces_refresh_request, session_plugins_reload_request, session_plugins_retry_managed_request, session_plugins_retry_managed_result, session_provider_get_endpoint_request, session_prune_result, session_quota_delegate_warning, session_quota_get_result, session_quota_plan_tier, session_quota_projection, session_quota_refresh_result, session_quota_snapshot, session_quota_take_warnings_result, sessions_bulk_delete_request, sessions_check_in_use_request, sessions_check_in_use_result, sessions_client_metadata_entry, sessions_close_request, sessions_close_result, sessions_create_workspace_request, sessions_create_workspace_result, sessions_delete_request, sessions_enrich_metadata_request, session_set_credentials_params, session_set_credentials_result, session_settings_built_in_tool_availability_snapshot, session_settings_evaluate_predicate_request, session_settings_evaluate_predicate_result, session_settings_job_snapshot, session_settings_model_snapshot, session_settings_online_evaluation_snapshot, session_settings_predicate_name, session_settings_repo_snapshot, session_settings_snapshot, session_settings_validation_snapshot, sessions_find_by_prefix_request, sessions_find_by_prefix_result, sessions_find_by_task_id_request, sessions_find_by_task_id_result, sessions_fork_request, sessions_fork_result, sessions_get_board_entry_count_request, sessions_get_board_entry_count_result, sessions_get_client_metadata_request, sessions_get_client_metadata_result, sessions_get_event_file_path_request, sessions_get_event_file_path_result, sessions_get_last_for_context_request, sessions_get_last_for_context_result, sessions_get_metadata_request, sessions_get_metadata_result, sessions_get_persisted_remote_steerable_request, sessions_get_persisted_remote_steerable_result, session_sizes, sessions_list_non_empty_session_ids_request, sessions_list_non_empty_session_ids_result, sessions_list_request, sessions_load_deferred_repo_hooks_request, sessions_load_workspace_request, sessions_load_workspace_result, sessions_open_attach, sessions_open_cloud, sessions_open_create, sessions_open_handoff, sessions_open_handoff_task_type, sessions_open_progress, sessions_open_progress_status, sessions_open_progress_step, sessions_open_remote, sessions_open_resume, sessions_open_resume_last, sessions_open_status, session_source, sessions_prune_old_request, sessions_read_persisted_events_request, sessions_release_lock_request, sessions_release_lock_result, sessions_reload_plugin_hooks_request, sessions_reload_plugin_hooks_result, sessions_save_request, sessions_save_result, sessions_set_additional_plugins_request, sessions_set_additional_plugins_result, sessions_set_remote_control_steering_request, sessions_start_remote_control_request, sessions_stop_remote_control_request, sessions_transfer_remote_control_request, sessions_update_workspace_fields_request, sessions_update_workspace_fields_result, session_telemetry_engagement, session_update_options_params, session_update_options_result, session_usage_set_code_changes_request, session_visibility_status, session_workflow_pause_at_checkpoint_result, session_working_directory_context, session_working_directory_context_host_type, session_working_directory_context_with_client, settable_auth_info, settable_token_auth_info, settings_edit_operation, settings_edit_result, settings_edit_status, shell_cancel_user_requested_request, shell_credentials, shell_exec_request, shell_exec_result, shell_execute_user_requested_request, shell_init_profile, shell_init_script, shell_init_script_shell, shell_kill_request, shell_kill_result, shell_kill_signal, shell_options, shutdown_request, skill, skill_apply_install_request, skill_apply_uninstall_request, skill_discovery_path, skill_discovery_path_list, skill_discovery_scope, skill_installation_failure_reason, skill_installation_file_review, skill_installation_location, skill_installation_management_outcome, skill_installation_management_result, skill_installation_operation_request, skill_installation_operation_status, skill_installation_outcome, skill_installation_ownership_state, skill_installation_result, skill_installation_review, skill_installation_scope, skill_installation_session_state, skill_installation_source, skill_installations_request, skill_installation_summary, skill_install_plan, skill_list, skill_plan_install_request, skill_plan_uninstall_request, skill_provider_descriptor, skill_provider_list_request, skill_provider_list_result, skill_provider_read_request, skill_provider_read_result, skills_config_set_disabled_skills_request, skills_config_set_skill_disabled_request, skills_disable_request, skills_discover_request, skills_enable_request, skill_set_enabled_request, skills_get_discovery_paths_request, skills_get_invoked_result, skills_invoked_skill, skills_load_diagnostics, skill_uninstall_plan, slash_command_add_timeline_entry_result, slash_command_agent_prompt_result, slash_command_completed_result, slash_command_info, slash_command_input, slash_command_input_choice, slash_command_input_completion, slash_command_invocation_result, slash_command_kind, slash_command_model_picker_dialog, slash_command_select_subcommand_option, slash_command_select_subcommand_result, slash_command_set_model_result, slash_command_set_plan_model_result, slash_command_show_dialog_result, slash_command_text_result, slash_command_timeline_entry, subagent_settings_entry, subagent_settings_entry_context_tier, system_message_block, task_agent_info, task_agent_progress, task_client_active_status, task_client_execution_mode, task_client_info, task_client_owner, task_client_owner_kind, task_client_owner_presence, task_client_progress, task_client_status, task_client_type, task_client_update, task_complete_data, task_completion_decision, task_execution_mode, task_info, task_kind, task_list, task_progress_line, tasks_cancel_request, tasks_cancel_result, tasks_get_current_promotable_result, tasks_get_progress_request, tasks_get_progress_result, task_shell_info, task_shell_info_attachment_mode, task_shell_progress, tasks_promote_current_to_background_result, tasks_promote_to_background_request, tasks_promote_to_background_result, tasks_refresh_result, tasks_register_request, tasks_register_result, tasks_remove_request, tasks_remove_result, tasks_send_message_request, tasks_send_message_result, tasks_start_agent_request, tasks_start_agent_result, task_status, tasks_update_request, tasks_update_result, tasks_wait_for_pending_result, telemetry_set_feature_overrides_request, token_auth_info, token_provider_auth_info, tool, tool_list, tool_result, tool_result_expanded, tool_result_new_message, tool_result_type, tools_execute_request, tools_get_builtin_descriptors_request, tools_get_builtin_descriptors_result, tools_get_current_metadata_result, tools_initialize_and_validate_result, tools_list_pending_requests_request, tools_list_request, tools_set_request, tools_set_result, tools_shell_descriptor_config, tools_task_complete_event_data_request, tools_update_subagent_settings_result, ui_auto_mode_switch_response, ui_elicitation_array_any_of_field, ui_elicitation_array_any_of_field_items, ui_elicitation_array_any_of_field_items_any_of, ui_elicitation_array_enum_field, ui_elicitation_array_enum_field_items, ui_elicitation_field_value, ui_elicitation_request, ui_elicitation_response, ui_elicitation_response_action, ui_elicitation_response_content, ui_elicitation_result, ui_elicitation_schema, ui_elicitation_schema_property, ui_elicitation_schema_property_boolean, ui_elicitation_schema_property_number, ui_elicitation_schema_property_number_type, ui_elicitation_schema_property_string, ui_elicitation_schema_property_string_format, ui_elicitation_string_enum_field, ui_elicitation_string_one_of_field, ui_elicitation_string_one_of_field_one_of, ui_ephemeral_query_request, ui_ephemeral_query_result, ui_exit_plan_mode_action, ui_exit_plan_mode_response, ui_handle_pending_auto_mode_switch_request, ui_handle_pending_elicitation_request, ui_handle_pending_exit_plan_mode_request, ui_handle_pending_result, ui_handle_pending_sampling_request, ui_handle_pending_sampling_response, ui_handle_pending_session_limits_exhausted_request, ui_handle_pending_user_input_request, ui_register_direct_auto_mode_switch_handler_result, ui_session_limits_exhausted_response, ui_session_limits_exhausted_response_action, ui_unregister_direct_auto_mode_switch_handler_request, ui_unregister_direct_auto_mode_switch_handler_result, ui_user_input_response, unsupported_enqueue_command_result, update_subagent_settings_request, usage_get_metrics_result, usage_set_code_changes_request, user_auth_info, user_requested_shell_command_result, user_setting_metadata, user_settings_apply_top_key_request, user_settings_apply_top_key_result, user_settings_edit_request, user_settings_get_paths_request, user_settings_get_paths_result, user_settings_get_result, user_settings_governance_keys_result, user_settings_load_for_edit_result, user_settings_normalize_request, user_settings_normalize_result, user_settings_problem, user_settings_problem_location, user_settings_problem_source, user_settings_problems_request, user_settings_problems_result, user_settings_set_request, user_settings_update_request, user_settings_update_result, user_settings_validate_request, user_settings_validate_result, user_settings_validation_issue, user_settings_write_all_request, visibility_get_result, visibility_set_request, visibility_set_result, workflow_abort_request, workflow_ack_result, workflow_agent_options, workflow_agent_request, workflow_agent_result, workflow_agent_summary, workflow_cancel_request, workflow_current_phase, workflow_declared_limits, workflow_durable_operation, workflow_execute_request, workflow_execute_result, workflow_get_run_progress_request, workflow_get_run_request, workflow_journal_get_request, workflow_journal_get_result, workflow_journal_put_request, workflow_list_runs_request, workflow_list_runs_result, workflow_log_line, workflow_log_line_kind, workflow_log_request, workflow_pause_checkpoint_action, workflow_pause_checkpoint_request, workflow_pause_checkpoint_result, workflow_pause_info, workflow_pause_request, workflow_phase_observation, workflow_phase_status, workflow_progress_line, workflow_progress_page, workflow_resume_request, workflow_resume_result, workflow_run_consumed, workflow_run_detail, workflow_run_failure, workflow_run_failure_kind, workflow_run_limits, workflow_run_options, workflow_run_request, workflow_run_result, workflow_run_status, workflow_run_summary, workflow_run_terminal, workflow_tool_resume_request, workflow_tool_run_options, workflow_tool_run_request, workspace_diff_contents, workspace_diff_file_change, workspace_diff_file_change_type, workspace_diff_mode, workspace_diff_result, workspaces_add_summary_request, workspaces_add_summary_result, workspaces_autopilot_objective_exists_result, workspaces_checkpoints, workspaces_create_directory_request, workspaces_create_file_request, workspaces_delete_autopilot_objective_result, workspaces_diff_request, workspaces_ensure_request, workspaces_get_workspace_result, workspaces_list_checkpoints_result, workspaces_list_files_result, workspaces_read_autopilot_objective_result, workspaces_read_checkpoint_request, workspaces_read_checkpoint_result, workspaces_read_file_request, workspaces_read_file_result, workspaces_remove_path_request, workspaces_rename_path_request, workspaces_save_large_paste_request, workspaces_save_large_paste_result, workspaces_stat_file_request, workspaces_stat_file_result, workspaces_truncate_summaries_request, workspace_summary_host_type, workspaces_update_metadata_request, workspaces_workspace_details_host_type, workspaces_write_autopilot_objective_request, workspaces_write_autopilot_objective_result, connector_session_account_result, session_auth_info_result, session_context_attribution, session_context_info, subagent_settings, task_progress, workspace_summary)
+        return RPC(abort_request, abort_result, accepted_enqueue_command_result, account_all_users, account_auth_info, account_describe_auth_info_request, account_describe_auth_info_result, account_get_all_users_result, account_get_current_auth_result, account_get_gist_support_request, account_get_gist_support_result, account_get_quota_request, account_get_quota_result, account_get_token_env_var_result, account_get_web_url_request, account_get_web_url_result, account_kind, account_login_request, account_login_result, account_logout_request, account_logout_result, account_quota_snapshot, accounts_enumerate_request, accounts_get_request, accounts_set_request, account_status, adaptive_thinking_support, agent_discovery_path, agent_discovery_path_list, agent_discovery_path_scope, agent_get_current_result, agent_info, agent_info_source, agent_list, agent_list_request, agent_registry_live_target_entry, agent_registry_live_target_entry_attention_kind, agent_registry_live_target_entry_kind, agent_registry_live_target_entry_last_terminal_event, agent_registry_live_target_entry_status, agent_registry_log_capture, agent_registry_log_capture_open_error_reason, agent_registry_spawn_error, agent_registry_spawn_permission_mode, agent_registry_spawn_registry_timeout, agent_registry_spawn_request, agent_registry_spawn_result, agent_registry_spawn_spawned, agent_registry_spawn_validation_error, agent_registry_spawn_validation_error_field, agent_registry_spawn_validation_error_reason, agent_reload_result, agents_custom_agent_initial_model_decision_params, agents_custom_agent_initial_model_decision_result, agents_discover_request, agent_select_request, agent_select_result, agent_set_prompt_request, agents_get_available_builtins_request, agents_get_available_builtins_result, agents_get_builtin_definition_request, agents_get_builtin_definition_result, agents_get_builtin_listing_definition_request, agents_get_builtin_listing_definition_result, agents_get_builtins_result, agents_get_discovery_paths_request, api_key_auth_info, auth_enumerate_query, auth_enumerate_value, auth_identity, auth_identity_metadata, auth_info, auth_info_type, auth_login_account, auth_login_advance_request, auth_login_begin_request, auth_login_begun, auth_login_cancel_request, auth_login_result_dto, auth_login_result_status, auth_login_step, auth_read_query, auth_read_value, auth_status_dto, auth_validation_error, auth_validation_errors, auth_write, auth_write_result, autopilot_objective_credit_limit, autopilot_objective_get_state_result, autopilot_objective_state, autopilot_objective_status, auto_tier_descriptor, auto_tier_metadata, auto_tier_status, builtin_agent_summary, built_in_model_catalog, built_in_model_catalog_entry, builtin_tool_descriptor, builtin_tool_format, builtin_tool_format_type, builtin_tool_input_schema, builtin_tool_input_schema_type, builtin_tool_safe_for_telemetry, builtin_tool_safe_telemetry_fields, cancel_user_requested_shell_command_result, canvas_action, canvas_action_invoke_request, canvas_action_invoke_result, canvas_close_request, canvas_host_context, canvas_host_context_capabilities, canvas_json_schema, canvas_list, canvas_list_open_result, canvas_open_request, canvas_provider_close_request, canvas_provider_invoke_action_request, canvas_provider_open_request, canvas_provider_open_result, canvas_provider_register_request, canvas_provider_unregister_request, canvas_session_context, capi_session_options, card_digest, card_digest_algorithm, card_digest_value, catalog_agent_plugin_candidate, catalog_agent_plugin_candidate_kind, catalog_agent_plugin_candidate_provenance, catalog_agent_plugin_compatibility_tag, catalog_agent_plugin_media_type, catalog_ai_skill_candidate, catalog_ai_skill_candidate_kind, catalog_ai_skill_candidate_provenance, catalog_ai_skill_installability, catalog_ai_skill_media_type, catalog_authentication_required_error, catalog_authentication_required_reason, catalog_candidate, catalog_candidate_kind, catalog_candidate_source, catalog_candidate_source_embedded, catalog_candidate_source_url, catalog_capability, catalog_capability_id, catalog_client_contract, catalog_contract_violation_error, catalog_contract_violation_reason, catalog_handle_rejected_error, catalog_handle_rejection_reason, catalog_handle_type, catalog_invalid_request_error, catalog_invalid_request_field, catalog_malformed_card_error, catalog_malformed_card_reason, catalog_mcp_server_candidate, catalog_mcp_server_candidate_kind, catalog_mcp_server_candidate_provenance, catalog_mcp_server_installability, catalog_media_type, catalog_negotiated_contract, catalog_negotiation_refused_error, catalog_negotiation_refused_reason, catalog_network_failure_error, catalog_network_failure_reason, catalog_not_installable_error, catalog_not_installable_reason, catalog_plugin_repository_source, catalog_policy_rejected_error, catalog_resource_identity, catalog_resource_version, catalog_search_page, catalog_search_pagination, catalog_search_request, catalog_search_result, catalog_search_succeeded, catalog_search_total_count_relation, catalog_selection_cancelled, catalog_selection_decision, catalog_selection_declined, catalog_selection_foreign, catalog_selection_invalid, catalog_selection_replayed, catalog_selection_request, catalog_selection_result, catalog_selection_selected, catalog_selection_stale, catalog_selection_timed_out, catalog_selection_wrong_kind, catalog_trust_eligibility, catalog_trust_provenance, catalog_trust_snapshot, catalog_trust_snapshot_absent, catalog_trust_snapshot_absent_status, catalog_trust_snapshot_current, catalog_trust_snapshot_current_status, catalog_trust_snapshot_downgraded, catalog_trust_snapshot_downgraded_status, catalog_trust_snapshot_malformed, catalog_trust_snapshot_malformed_status, catalog_trust_snapshot_revoked, catalog_trust_snapshot_revoked_status, catalog_trust_snapshot_schema_version, catalog_trust_snapshot_stale, catalog_trust_snapshot_stale_status, catalog_trust_snapshot_unsupported, catalog_trust_snapshot_unsupported_status, catalog_trust_source, catalog_trust_tier, catalog_unavailable_error, catalog_unavailable_reason, catalog_unavailable_transport_error, catalog_unavailable_transport_reason, catalog_unsafe_retrieval_error, catalog_unsafe_retrieval_reason, catalog_unsupported_kind_error, client_metadata, client_task_cancel_reason, client_task_cancel_request, client_task_cancel_result, command_list, commands_finalize_invocation_effect_request, commands_finalize_invocation_effect_result, commands_handle_pending_command_request, commands_handle_pending_command_result, commands_invocation_effect_outcome, commands_invocation_origin, commands_invoke_request, commands_list_request, commands_respond_to_queued_command_request, commands_respond_to_queued_command_result, completions_get_trigger_characters_result, completions_request_request, completions_request_result, configure_session_extensions_params, connect_client_info, connected_remote_session_metadata, connected_remote_session_metadata_kind, connected_remote_session_metadata_repository, connector_account_request, connector_authorization_requirement, connector_authorization_scope, connector_availability, connector_capabilities, connector_catalog_entry, connector_catalog_result, connector_catalog_status, connector_connect_request, connector_connect_result, connector_continue_request, connector_disconnect_result, connector_discovery_account, connector_discovery_account_list, connector_discovery_account_request, connector_discovery_auth_info, connector_discovery_availability, connector_discovery_capabilities, connector_discovery_catalog_entry, connector_discovery_catalog_result, connector_mcp_status, connector_reconcile_request, connector_runtime_status, connector_session_account, connector_status, connect_remote_session_params, connect_request, connect_result, content_exclusion_check_paths_request, content_exclusion_check_paths_result, content_exclusion_path_check, content_filter_mode, context_heaviest_message, copilot_api_token_auth_info, copilot_user_response, copilot_user_response_endpoints, copilot_user_response_quota_snapshots, copilot_user_response_quota_snapshots_chat, copilot_user_response_quota_snapshots_completions, copilot_user_response_quota_snapshots_premium_interactions, current_model, current_tool_metadata, customization_reload_outcome, customization_reload_status, customization_reload_subsystem, customizations_reload_result, debug_collect_logs_collected_entry, debug_collect_logs_destination, debug_collect_logs_entry, debug_collect_logs_entry_kind, debug_collect_logs_include, debug_collect_logs_redaction, debug_collect_logs_request, debug_collect_logs_result, debug_collect_logs_result_kind, debug_collect_logs_skipped_entry, debug_collect_logs_source, diagnostic_cursor_status, diagnostic_entry, diagnostic_log_level, diagnostics_configuration, diagnostics_configure_request, diagnostic_severity, diagnostic_source, diagnostic_sources_configuration, diagnostics_read_request, diagnostics_read_result, discovered_canvas, discovered_extension, discovered_extension_mode, discovered_extension_plugin, discovered_extensions, discovered_extensions_disable_request, discovered_extensions_enable_request, discovered_extension_source, discovered_hook, discovered_mcp_server, discovered_mcp_server_type, discovered_model, discovered_model_list, enqueue_command_params, enqueue_command_result, env_auth_info, environment_capabilities, environment_kind, environments_delete_request, environments_delete_result, environments_get_request, environments_get_result, environments_list_request, environments_list_result, event_log_read_request, event_log_release_interest_result, event_log_tail_result, event_log_types, events_agent_scope, events_cursor_status, events_read_direction, events_read_result, execute_command_params, execute_command_result, extension, extension_context_push_input, extension_launch_profile, extension_launch_provider_resolve_request, extension_launch_provider_resolve_result, extension_list, extensions_disable_request, extensions_enable_request, extension_source, extension_status, external_tool_result, external_tool_text_result_for_llm, external_tool_text_result_for_llm_binary_results_for_llm, external_tool_text_result_for_llm_binary_results_for_llm_type, external_tool_text_result_for_llm_content, external_tool_text_result_for_llm_content_audio, external_tool_text_result_for_llm_content_image, external_tool_text_result_for_llm_content_resource, external_tool_text_result_for_llm_content_resource_details, external_tool_text_result_for_llm_content_resource_link, external_tool_text_result_for_llm_content_resource_link_icon, external_tool_text_result_for_llm_content_resource_link_icon_theme, external_tool_text_result_for_llm_content_shell_exit, external_tool_text_result_for_llm_content_terminal, external_tool_text_result_for_llm_content_text, feature_flag_availability, feature_flag_metadata, feature_flags_metadata_result, feature_flags_resolve_request, feature_flags_resolve_result, feature_flags_resolve_startup_gates_request, feature_flags_resolve_startup_gates_result, filter_mapping, fleet_start_request, fleet_start_result, folder_trust_add_params, folder_trust_check_params, folder_trust_check_result, folder_trust_is_trusted_params, force_login_orgs_decision, gh_cli_auth_info, git_current_branch_remote_result, git_cwd_request, git_hub_environment, git_hub_owner_option, git_hub_owners_cancel_request, git_hub_owners_cancel_result, git_hub_owners_list_request, git_hub_owners_list_result, git_hub_owners_request_id_result, git_hub_repository_at_path_request, git_hub_repository_at_path_result, git_hub_repository_identity, git_hub_telemetry_client_info, git_hub_telemetry_event, git_hub_telemetry_notification, git_hub_token_acquire_reason, git_hub_token_acquire_request, git_hub_token_acquire_result, git_remote_repository, git_repos_from_remotes_request, git_repos_from_remotes_result, global_state_load_for_config_dir_request, global_state_load_result, global_state_write_key_request, handle_pending_tool_call_request, handle_pending_tool_call_result, history_abort_manual_compaction_result, history_cancel_background_compaction_result, history_clear_context_request, history_clear_context_result, history_compact_context_window, history_compact_request, history_compact_result, history_file_restore_skip_reason, history_list_rewind_points_result, history_preview_rewind_request, history_preview_rewind_result, history_rewind_change_type, history_rewind_file_preview, history_rewind_mode, history_rewind_outcome, history_rewind_point, history_rewind_request, history_rewind_result, history_rewind_unavailable_reason, history_skipped_file_restore, history_summarize_for_handoff_result, history_truncate_request, history_truncate_result, hmac_auth_info, hook_invoke_request, hook_invoke_response, hook_origin, hooks_discover_request, hooks_discover_result, hook_type, host_configuration, host_dispose_request, host_empty_result, host_environment_credentials, host_exited_notification, host_exit_reason, host_git_hub_environment_options, host_list_sessions_request, host_list_sessions_result, host_local_server_configuration, host_local_server_options, host_publish_session_request, host_publish_session_result, host_ready_request, host_register_session_request, host_session_create_callback, host_session_create_request, host_session_create_result, host_session_released_notification, host_session_release_request, host_session_summary, host_start_request, host_start_result, installation_catalogue_identity, installation_confirmation_request, installation_confirmation_response, installation_decision, installation_review, installed_plugin, installed_plugin_info, installed_plugin_source, installed_plugin_source_git_hub, installed_plugin_source_local, installed_plugin_source_url, instruction_discovery_path, instruction_discovery_path_kind, instruction_discovery_path_list, instruction_discovery_path_location, instructions_discover_repo_sources_request, instructions_discover_request, instructions_get_discovery_paths_request, instructions_get_sources_result, instructions_init_prompt_result, instruction_source, instruction_source_location, instruction_source_type, interrupt_main_turn_request, interrupt_main_turn_result, json_schema_response_format, llm_inference_headers, llm_inference_http_request_chunk_request, llm_inference_http_request_chunk_result, llm_inference_http_request_start_request, llm_inference_http_request_start_result, llm_inference_http_request_start_transport, llm_inference_http_response_chunk_error, llm_inference_http_response_chunk_request, llm_inference_http_response_chunk_result, llm_inference_http_response_start_request, llm_inference_http_response_start_result, llm_inference_set_provider_result, local_session_metadata_value, location_permissions_cleanup_result, logged_in_user, login_provider_kind, log_request, log_result, lsp_initialize_request, managed_mcp_server_config, managed_permission_evaluation, managed_permission_operation, managed_permission_operation_kind, managed_permissions_evaluate_request, managed_permissions_evaluate_result, managed_permission_verdict, managed_plugin_retry_entry, managed_plugin_retry_status, managed_setting_meta, managed_settings_apply_controls_params, managed_settings_apply_controls_result, managed_settings_bypass_disable_source, managed_settings_bypass_policy_resolution, managed_settings_channel, managed_settings_compose_layer, managed_settings_compose_request, managed_settings_compose_result, managed_settings_diagnostic, managed_settings_diagnostic_severity, managed_settings_ingest_params, managed_settings_ingest_result, managed_settings_layer, managed_settings_load_remote_control_params, managed_settings_load_remote_control_result, managed_settings_log_level, managed_settings_log_message, managed_settings_meta, managed_settings_parse_client_value_params, managed_settings_parse_client_value_result, managed_settings_policy_helper_authority, managed_settings_policy_helper_reason, managed_settings_read_device_result, managed_settings_read_result, managed_settings_resolve_bypass_disable_transition_params, managed_settings_resolve_bypass_disable_transition_result, managed_settings_resolved_data, managed_settings_resolve_device_force_login_orgs_gate_params, managed_settings_resolve_effective_value_params, managed_settings_resolve_effective_value_result, managed_settings_resolve_request, managed_settings_resolve_result, managed_settings_resolve_startup_policy_params, managed_settings_resolve_startup_policy_result, managed_settings_retain_policy_params, managed_settings_schema_result, managed_settings_server_policy_cache_mode, managed_settings_server_policy_resolution, managed_settings_validate_request, managed_settings_validate_result, managed_settings_values, marketplace_add_result, marketplace_browse_result, marketplace_info, marketplace_list_result, marketplace_plugin_info, marketplace_refresh_entry, marketplace_refresh_result, marketplace_remove_result, mcp_allowed_server, mcp_apply_install_request, mcp_apply_uninstall_request, mcp_apps_call_tool_request, mcp_apps_diagnose_capability, mcp_apps_diagnose_request, mcp_apps_diagnose_result, mcp_apps_diagnose_server, mcp_apps_host_context, mcp_apps_host_context_details, mcp_apps_host_context_details_available_display_mode, mcp_apps_host_context_details_display_mode, mcp_apps_host_context_details_platform, mcp_apps_host_context_details_theme, mcp_apps_list_tools_request, mcp_apps_list_tools_result, mcp_apps_read_resource_request, mcp_apps_read_resource_result, mcp_apps_resource_content, mcp_apps_set_host_context_details, mcp_apps_set_host_context_details_available_display_mode, mcp_apps_set_host_context_details_display_mode, mcp_apps_set_host_context_details_platform, mcp_apps_set_host_context_details_theme, mcp_apps_set_host_context_request, mcp_cancel_sampling_execution_params, mcp_cancel_sampling_execution_result, mcp_config_add_request, mcp_config_disable_request, mcp_config_enable_request, mcp_config_list, mcp_config_remove_request, mcp_config_update_request, mcp_configured_server, mcp_configured_server_list, mcp_configured_server_state, mcp_configure_git_hub_request, mcp_configure_git_hub_result, mcp_diagnostic_details, mcp_diagnostic_direction, mcp_diagnostic_kind, mcp_diagnostic_source_configuration, mcp_disable_request, mcp_discover_request, mcp_discover_result, mcp_elicitation_form_mode, mcp_enable_request, mcp_execute_sampling_params, mcp_execute_sampling_request, mcp_execute_sampling_result, mcp_failed_server, mcp_filtered_server, mcp_headers_handle_pending_headers_refresh_request, mcp_headers_handle_pending_headers_refresh_request_request, mcp_headers_handle_pending_headers_refresh_request_result, mcp_host_state, mcp_installation_failure_reason, mcp_installation_input, mcp_installation_management_outcome, mcp_installation_management_result, mcp_installation_operation_request, mcp_installation_operation_status, mcp_installation_outcome, mcp_installation_remote_configuration, mcp_installation_result, mcp_installation_review, mcp_installation_secret, mcp_installation_secret_storage, mcp_installations_request, mcp_installation_state, mcp_installation_summary, mcp_install_plan, mcp_is_server_running_request, mcp_is_server_running_result, mcp_list_builtin_server_names_result, mcp_list_tools_request, mcp_list_tools_result, mcp_oauth_authentication_state_changed_request, mcp_oauth_cancel_login_request, mcp_oauth_cancel_login_result, mcp_oauth_complete_request, mcp_oauth_handle_pending_request, mcp_oauth_handle_pending_result, mcp_oauth_login_grant_type, mcp_oauth_login_request, mcp_oauth_login_result, mcp_oauth_pending_request_response, mcp_oauth_prepare_login_request, mcp_oauth_prepare_login_result, mcp_oauth_probe_needs_auth_reason, mcp_oauth_probe_request, mcp_oauth_probe_result, mcp_oauth_respond_request, mcp_oauth_respond_result, mcp_owned_oauth_login_status, mcp_plan_configuration_change, mcp_plan_configuration_operation, mcp_plan_enum_value_type, mcp_plan_install_planned, mcp_plan_install_request, mcp_plan_install_result, mcp_plan_install_source, mcp_plan_install_source_candidate, mcp_plan_install_source_candidate_kind, mcp_plan_install_source_card, mcp_plan_install_source_card_kind, mcp_plan_package_install_method, mcp_plan_package_transport, mcp_plan_policy_decision, mcp_plan_policy_result, mcp_plan_policy_source, mcp_plan_provenance, mcp_plan_remote_install_method, mcp_plan_remote_transport, mcp_plan_required_value, mcp_plan_required_value_enum, mcp_plan_required_value_enum_kind, mcp_plan_required_value_scalar, mcp_plan_required_value_scalar_kind, mcp_plan_resource_identity, mcp_plan_scalar_value_type, mcp_plan_scope, mcp_plan_secret_placeholder, mcp_plan_secret_reference, mcp_plan_target, mcp_plan_transport_choice, mcp_plan_transport_choice_package, mcp_plan_transport_choice_remote, mcp_plan_uninstall_request, mcp_plan_value_category, mcp_prepared_install, mcp_prepare_install_request, mcp_prompt, mcp_prompt_argument, mcp_prompt_icon, mcp_prompt_message, mcp_prompt_role, mcp_prompts_get_request, mcp_prompts_get_result, mcp_prompts_list_request, mcp_prompts_list_result, mcp_register_external_client_request, mcp_registry_cancel_request, mcp_registry_cancel_result, mcp_registry_request_id_result, mcp_registry_search_request, mcp_registry_search_result, mcp_reload_config, mcp_reload_with_config_request, mcp_remove_git_hub_result, mcp_resource, mcp_resource_annotations, mcp_resource_content, mcp_resource_icon, mcp_resources_list_request, mcp_resources_list_result, mcp_resources_list_templates_request, mcp_resources_list_templates_result, mcp_resources_read_request, mcp_resources_read_result, mcp_resource_template, mcp_restart_server_request, mcp_safe_for_telemetry, mcp_safe_for_telemetry_fields, mcp_sampling_execution_action, mcp_sampling_execution_result, mcp_serializable_server_config, mcp_server, mcp_server_auth_config, mcp_server_auth_config_redirect_port, mcp_server_card_embedded, mcp_server_card_embedded_kind, mcp_server_card_media_type, mcp_server_card_reference, mcp_server_card_url, mcp_server_card_url_kind, mcp_server_config, mcp_server_config_defer_tools, mcp_server_config_http, mcp_server_config_http_oauth_grant_type, mcp_server_config_http_type, mcp_server_config_memory, mcp_server_config_memory_type, mcp_server_config_stdio, mcp_server_config_stdio_type, mcp_server_failure_info, mcp_server_list, mcp_server_needs_auth_info, mcp_server_ownership, mcp_set_env_value_mode_details, mcp_set_env_value_mode_params, mcp_set_env_value_mode_result, mcp_should_exclude_git_hub_tools_request, mcp_should_exclude_git_hub_tools_result, mcp_source_file, mcp_source_plugin, mcp_source_ref, mcp_start_server_request, mcp_start_servers_result, mcp_stop_server_request, mcp_task_metadata, mcp_tools, mcp_tool_ui, mcp_tool_ui_visibility, mcp_uninstall_plan, mcp_unregister_external_client_request, memory_configuration, metadata_context_attribution_result, metadata_context_heaviest_messages_request, metadata_context_heaviest_messages_result, metadata_context_info_request, metadata_context_info_result, metadata_is_processing_result, metadata_recompute_context_tokens_request, metadata_recompute_context_tokens_result, metadata_record_context_change_request, metadata_record_context_change_result, metadata_set_working_directory_request, metadata_set_working_directory_result, metadata_snapshot_current_mode, metadata_snapshot_remote_metadata, metadata_snapshot_remote_metadata_repository, metadata_snapshot_remote_metadata_task_type, metadata_update_client_metadata_request, model, model_apply_startup_overlay_request, model_artifact_details, model_billing, model_billing_promo, model_billing_token_prices, model_billing_token_prices_long_context, model_capabilities, model_capabilities_limits, model_capabilities_limits_vision, model_capabilities_override, model_capabilities_override_limits, model_capabilities_override_limits_vision, model_capabilities_override_supports, model_capabilities_supports, model_clear_startup_seed_request, model_clear_startup_seed_result, model_get_reasoning_summaries_request, model_get_reasoning_summaries_result, model_list, model_list_request, model_message, model_picker_category, model_picker_persistence_request, model_picker_price_category, model_picker_settings_context, model_policy, model_policy_state, model_provider_adapter_catalog, model_provider_adapter_descriptor, model_provider_adapter_operation_descriptor, model_provider_attribution, model_provider_automatic_discovery_mode, model_provider_automatic_discovery_policy, model_provider_configuration_disposition, model_provider_configuration_plan, model_provider_descriptor, model_provider_discover_request, model_provider_discover_result, model_provider_discovery_network_scope, model_provider_get_status_request, model_provider_instance, model_provider_instance_reference, model_provider_models_list_request, model_provider_operation_outcome, model_provider_operation_outcome_code, model_provider_prepare_configuration_request, model_provider_provenance, model_provider_provenance_source, model_provider_status, model_provider_warning, model_set_allowed_models_request, model_set_allowed_models_result, model_set_reasoning_effort_request, model_set_reasoning_effort_result, models_list_request, model_switch_auto_tier_request, model_switch_auto_tier_result, model_switch_auto_tier_status, model_switch_confirmation, model_switch_to_request, model_switch_to_result, model_warning_text, mode_set_request, mode_set_result, move_mcp_loading_to_background_result, named_provider_config, name_get_result, name_set_auto_request, name_set_auto_result, name_set_request, open_canvas_instance, options_update_additional_content_exclusion_policy, options_update_additional_content_exclusion_policy_rule, options_update_additional_content_exclusion_policy_rule_source, options_update_additional_content_exclusion_policy_scope, options_update_context_tier, options_update_env_value_mode, options_update_reasoning_summary, options_update_tool_filter_precedence, pending_external_tool_request, pending_external_tool_request_list, pending_permission_request, pending_permission_request_list, permission_decision, permission_decision_approved, permission_decision_approved_for_location, permission_decision_approved_for_session, permission_decision_approve_for_location, permission_decision_approve_for_location_approval, permission_decision_approve_for_location_approval_commands, permission_decision_approve_for_location_approval_custom_tool, permission_decision_approve_for_location_approval_extension_env_access, permission_decision_approve_for_location_approval_extension_management, permission_decision_approve_for_location_approval_extension_permission_access, permission_decision_approve_for_location_approval_mcp, permission_decision_approve_for_location_approval_mcp_sampling, permission_decision_approve_for_location_approval_memory, permission_decision_approve_for_location_approval_read, permission_decision_approve_for_location_approval_workflow, permission_decision_approve_for_location_approval_write, permission_decision_approve_for_session, permission_decision_approve_for_session_approval, permission_decision_approve_for_session_approval_commands, permission_decision_approve_for_session_approval_custom_tool, permission_decision_approve_for_session_approval_extension_env_access, permission_decision_approve_for_session_approval_extension_management, permission_decision_approve_for_session_approval_extension_permission_access, permission_decision_approve_for_session_approval_mcp, permission_decision_approve_for_session_approval_mcp_sampling, permission_decision_approve_for_session_approval_memory, permission_decision_approve_for_session_approval_read, permission_decision_approve_for_session_approval_workflow, permission_decision_approve_for_session_approval_write, permission_decision_approve_once, permission_decision_approve_permanently, permission_decision_approve_read_only_for_session, permission_decision_cancelled, permission_decision_context, permission_decision_denied_by_content_exclusion_policy, permission_decision_denied_by_permission_request_hook, permission_decision_denied_by_rules, permission_decision_denied_interactively_by_user, permission_decision_denied_no_approval_rule_and_could_not_request_from_user, permission_decision_outcome, permission_decision_reject, permission_decision_request, permission_decision_surface, permission_decision_user_not_available, permission_location_add_tool_approval_params, permission_location_apply_params, permission_location_apply_result, permission_location_resolve_params, permission_location_resolve_result, permission_location_type, permission_mode_source, permission_paths_add_params, permission_paths_allowed_check_params, permission_paths_allowed_check_result, permission_paths_config, permission_paths_list, permission_paths_update_primary_params, permission_paths_workspace_check_params, permission_paths_workspace_check_result, permission_prompt_shown_notification, permission_request_result, permission_response_capability, permission_rules_set, permissions_configure_additional_content_exclusion_policy, permissions_configure_additional_content_exclusion_policy_rule, permissions_configure_additional_content_exclusion_policy_rule_source, permissions_configure_additional_content_exclusion_policy_scope, permissions_configure_params, permissions_configure_result, permissions_evaluate_managed_policy_params, permissions_evaluate_managed_policy_result, permissions_folder_trust_add_trusted_result, permissions_get_mode_request, permissions_get_mode_result, permissions_locations_add_tool_approval_details, permissions_locations_add_tool_approval_details_commands, permissions_locations_add_tool_approval_details_custom_tool, permissions_locations_add_tool_approval_details_extension_env_access, permissions_locations_add_tool_approval_details_extension_management, permissions_locations_add_tool_approval_details_extension_permission_access, permissions_locations_add_tool_approval_details_mcp, permissions_locations_add_tool_approval_details_mcp_sampling, permissions_locations_add_tool_approval_details_memory, permissions_locations_add_tool_approval_details_read, permissions_locations_add_tool_approval_details_workflow, permissions_locations_add_tool_approval_details_write, permissions_locations_add_tool_approval_result, permissions_modify_rules_params, permissions_modify_rules_result, permissions_modify_rules_scope, permissions_notify_prompt_shown_result, permissions_paths_add_result, permissions_paths_list_request, permissions_paths_update_primary_result, permissions_pending_requests_request, permissions_reset_session_approvals_request, permissions_reset_session_approvals_result, permissions_set_approve_all_request, permissions_set_approve_all_result, permissions_set_approve_all_source, permissions_set_mode_request, permissions_set_mode_result, permissions_set_required_request, permissions_set_required_result, permissions_urls_set_unrestricted_mode_result, permission_urls_config, permission_urls_set_unrestricted_mode_params, persistence_write_raw_json_locked_request, persistence_write_raw_json_locked_result, ping_request, ping_result, plan_read_result, plan_read_sql_todos_result, plan_read_sql_todos_with_dependencies_result, plan_sql_todo_dependency, plan_sql_todos_row, plan_update_request, plugin, plugin_install_result, plugin_install_staging_mode, plugin_list, plugin_list_result, plugins_builtin_set_request, plugins_disable_request, plugins_enable_request, plugins_install_request, plugins_marketplaces_add_request, plugins_marketplaces_browse_request, plugins_marketplaces_refresh_request, plugins_marketplaces_remove_request, plugins_reload_request, plugins_uninstall_request, plugins_update_request, plugin_update_all_entry, plugin_update_all_result, plugin_update_result, protocol_append_mode, protocol_customize_mode, protocol_external_tool_defer, protocol_external_tool_definition, protocol_marker_section_override, protocol_replace_mode, protocol_section_override, protocol_static_section_action, protocol_static_section_override, protocol_system_message_append_config, protocol_system_message_config, protocol_system_message_customize_config, protocol_system_message_replace_config, provider_add_request, provider_add_result, provider_config, provider_config_azure, provider_config_model_provider, provider_config_transport, provider_config_type, provider_config_wire_api, provider_descriptor, provider_endpoint, provider_endpoint_transport, provider_endpoint_type, provider_endpoint_wire_api, provider_get_endpoint_request, provider_model_config, provider_session_token, provider_sync_request, provider_sync_result, provider_token_acquire_request, provider_token_acquire_result, provider_withdraw_request, provider_withdraw_result, push_attachment, push_attachment_blob, push_attachment_directory, push_attachment_file, push_attachment_file_line_range, push_attachment_git_hub_actions_job, push_attachment_git_hub_commit, push_attachment_git_hub_file, push_attachment_git_hub_file_diff, push_attachment_git_hub_file_diff_side, push_attachment_git_hub_reference, push_attachment_git_hub_reference_type, push_attachment_git_hub_release, push_attachment_git_hub_repository, push_attachment_git_hub_snippet, push_attachment_git_hub_tree_comparison, push_attachment_git_hub_tree_comparison_side, push_attachment_git_hub_url, push_attachment_selection, push_attachment_selection_details, push_attachment_selection_details_end, push_attachment_selection_details_start, push_git_hub_repo_ref, queue_append_steering_request, queue_begin_deferred_idle_drain_request, queue_begin_deferred_idle_drain_result, queue_consume_system_notifications_request, queued_command_handled, queued_command_not_handled, queued_command_result, queue_defer_session_idle_request, queue_duplicate_at_request, queue_duplicate_at_result, queue_enqueue_resume_pending_result, queue_finish_deferred_idle_drain_request, queue_finish_deferred_idle_drain_result, queue_has_pending_result, queue_insert_at_request, queue_insert_at_result, queue_insert_message, queue_move_item_request, queue_move_item_result, queue_pending_items, queue_pending_items_kind, queue_pending_items_result, queue_remove_at_request, queue_remove_at_result, queue_remove_most_recent_result, queue_send_now_request, queue_send_now_result, queue_set_drain_paused_request, queue_snapshot_result, queue_update_text_request, queue_update_text_result, queue_withdraw_message_request, queue_withdraw_message_result, quota_take_warnings_result, quota_warning_projection, register_event_interest_params, register_event_interest_result, release_event_interest_params, remote_control_config, remote_control_config_existing_mc_session, remote_control_status, remote_control_status_active, remote_control_status_connecting, remote_control_status_error, remote_control_status_off, remote_control_status_result, remote_control_stop_result, remote_control_transfer_result, remote_enable_request, remote_enable_result, remote_notify_steerable_changed_request, remote_notify_steerable_changed_result, remote_session_connection_result, remote_session_host_status, remote_session_metadata_repository, remote_session_metadata_task_type, remote_session_metadata_value, remote_session_mode, remote_session_repository, repo_settings_edit_request, repo_settings_edit_scope, repo_settings_read_raw_request, repo_settings_read_raw_result, repo_settings_write_all_request, repo_settings_write_key_request, response_format, sandbox_apply_defaults_request, sandbox_check_enforcement_command_result, sandbox_check_platform_support_result, sandbox_check_windows_host_loopback_support_result, sandbox_config, sandbox_config_auth, sandbox_config_source, sandbox_config_user_policy, sandbox_config_user_policy_experimental, sandbox_config_user_policy_experimental_seatbelt, sandbox_config_user_policy_filesystem, sandbox_config_user_policy_network, sandbox_config_user_policy_network_proxy, sandbox_config_user_policy_seatbelt, sandbox_credentials_config, sandbox_credential_suggestion, sandbox_credential_suggestions_result, sandbox_disable_for_session_request, sandbox_disable_for_session_result, sandbox_docs_url_result, sandbox_effective_for_optional_params, sandbox_effective_for_optional_result, sandbox_enforcement_command_allowed_params, sandbox_enforcement_status, sandbox_filter_picker_candidates_params, sandbox_filter_picker_candidates_result, sandbox_get_unsupported_message_result, sandbox_get_unsupported_setting_disabled_notice_result, sandbox_grant_path_for_request_request, sandbox_grant_path_for_request_result, sandbox_host_capability, sandbox_host_capability_name, sandbox_host_support, sandbox_masked_env_var, sandbox_picker_candidate, sandbox_prepare_picker_policy_params, sandbox_prepare_picker_policy_result, sandbox_proxy_ca_check_installation_support_result, sandbox_proxy_ca_check_relevance_result, sandbox_proxy_ca_create_result, sandbox_proxy_ca_request, sandbox_proxy_ca_state, sandbox_proxy_ca_status, sandbox_proxy_secret_get_result, sandbox_proxy_secret_location, sandbox_proxy_secret_save_request, sandbox_proxy_secret_save_result, sandbox_resolve_floored_config_params, sandbox_resolve_floored_config_result, sandbox_session_change, sandbox_settings_apply_defaults_result, sandbox_unsupported_startup_notice_params, sandbox_unsupported_startup_notice_result, schedule_add_at_request, schedule_add_cron_request, schedule_add_request, schedule_add_result, schedule_add_self_paced_request, schedule_entry, schedule_has_self_paced_result, schedule_list, schedule_rearm_self_paced_request, schedule_stop_request, schedule_stop_result, secrets_add_filter_values_request, secrets_add_filter_values_result, send_agent_mode, send_attachments_to_message_params, send_message_item, send_messages_request, send_messages_result, send_mode, send_request, send_result, send_system_notification_request, server_agent_list, server_instruction_source_list, server_skill, server_skill_list, session_activity, session_agent_list_request, session_auth_login_request, session_auth_logout_user_request, session_auth_status, session_auth_switch_request, session_bulk_delete_result, session_cancel_all_background_agents_result, session_capability, session_commands_list_request, session_completion_item, session_connected_ide_info, session_context, session_context_host_type, session_enrich_metadata_result, session_fs_append_file_request, session_fs_error, session_fs_error_code, session_fs_exists_request, session_fs_exists_result, session_fs_mkdir_request, session_fs_readdir_request, session_fs_readdir_result, session_fs_readdir_with_types_entry, session_fs_readdir_with_types_entry_type, session_fs_readdir_with_types_request, session_fs_readdir_with_types_result, session_fs_read_file_bytes_request, session_fs_read_file_bytes_result, session_fs_read_file_request, session_fs_read_file_result, session_fs_rename_request, session_fs_rm_request, session_fs_set_provider_capabilities, session_fs_set_provider_conventions, session_fs_set_provider_request, session_fs_set_provider_result, session_fs_sqlite_exists_request, session_fs_sqlite_exists_result, session_fs_sqlite_query_request, session_fs_sqlite_query_result, session_fs_sqlite_query_type, session_fs_sqlite_transaction_error, session_fs_sqlite_transaction_error_class, session_fs_sqlite_transaction_request, session_fs_sqlite_transaction_result, session_fs_sqlite_transaction_statement, session_fs_stat_request, session_fs_stat_result, session_fs_write_file_bytes_request, session_fs_write_file_request, session_git_hub_auth_get_all_auth_available_result, session_git_hub_auth_logout_result, session_git_hub_auth_logout_user_result, session_history_compact_request, session_installed_plugin, session_installed_plugin_source, session_installed_plugin_source_git_hub, session_installed_plugin_source_local, session_installed_plugin_source_url, session_limit_prediction_baseline_data, session_limit_prediction_client_type, session_limit_prediction_details, session_limit_prediction_predict_request, session_limit_prediction_request, session_limit_prediction_result, session_limit_prediction_source, session_limit_prediction_tier, session_limit_prediction_tier_option, session_limit_prediction_unavailable_reason, session_list, session_list_entry, session_list_filter, session_load_deferred_repo_hooks_result, session_log_level, session_managed_permissions, session_managed_settings, session_mcp_apps_call_tool_result, session_mcp_oauth_cancel_login_request, session_mcp_oauth_cancel_login_result, session_mcp_oauth_prepare_login_request, session_mcp_oauth_prepare_login_result, session_mcp_set_connected_ide_info_params, session_metadata_snapshot, session_mode, session_model_clear_startup_seed_request, session_model_clear_startup_seed_result, session_model_list, session_model_list_request, session_model_price_category, session_open_options, session_open_options_additional_content_exclusion_policy, session_open_options_additional_content_exclusion_policy_rule, session_open_options_additional_content_exclusion_policy_rule_source, session_open_options_additional_content_exclusion_policy_scope, session_open_options_env_value_mode, session_open_options_reasoning_summary, session_open_params, session_open_result, session_plugins_disable_request, session_plugins_enable_request, session_plugins_install_request, session_plugins_marketplaces_refresh_request, session_plugins_reload_request, session_plugins_retry_managed_request, session_plugins_retry_managed_result, session_provider_get_endpoint_request, session_prune_result, session_quota_delegate_warning, session_quota_get_result, session_quota_plan_tier, session_quota_projection, session_quota_refresh_result, session_quota_snapshot, session_quota_take_warnings_result, sessions_bulk_delete_request, sessions_check_in_use_request, sessions_check_in_use_result, sessions_client_metadata_entry, sessions_close_request, sessions_close_result, sessions_create_workspace_request, sessions_create_workspace_result, sessions_delete_request, sessions_enrich_metadata_request, session_set_credentials_params, session_set_credentials_result, session_settings_built_in_tool_availability_snapshot, session_settings_evaluate_predicate_request, session_settings_evaluate_predicate_result, session_settings_job_snapshot, session_settings_model_snapshot, session_settings_online_evaluation_snapshot, session_settings_predicate_name, session_settings_repo_snapshot, session_settings_snapshot, session_settings_validation_snapshot, sessions_find_by_prefix_request, sessions_find_by_prefix_result, sessions_find_by_task_id_request, sessions_find_by_task_id_result, sessions_fork_request, sessions_fork_result, sessions_get_board_entry_count_request, sessions_get_board_entry_count_result, sessions_get_client_metadata_request, sessions_get_client_metadata_result, sessions_get_event_file_path_request, sessions_get_event_file_path_result, sessions_get_last_for_context_request, sessions_get_last_for_context_result, sessions_get_metadata_request, sessions_get_metadata_result, sessions_get_persisted_remote_steerable_request, sessions_get_persisted_remote_steerable_result, session_sizes, sessions_list_non_empty_session_ids_request, sessions_list_non_empty_session_ids_result, sessions_list_request, sessions_load_deferred_repo_hooks_request, sessions_load_workspace_request, sessions_load_workspace_result, sessions_open_attach, sessions_open_cloud, sessions_open_create, sessions_open_handoff, sessions_open_handoff_task_type, sessions_open_progress, sessions_open_progress_status, sessions_open_progress_step, sessions_open_remote, sessions_open_resume, sessions_open_resume_last, sessions_open_status, session_source, sessions_prune_old_request, sessions_read_persisted_events_request, sessions_release_lock_request, sessions_release_lock_result, sessions_reload_plugin_hooks_request, sessions_reload_plugin_hooks_result, sessions_save_request, sessions_save_result, sessions_set_additional_plugins_request, sessions_set_additional_plugins_result, sessions_set_remote_control_steering_request, sessions_start_remote_control_request, sessions_stop_remote_control_request, sessions_transfer_remote_control_request, sessions_update_workspace_fields_request, sessions_update_workspace_fields_result, session_telemetry_engagement, session_update_options_params, session_update_options_result, session_usage_set_code_changes_request, session_visibility_status, session_workflow_pause_at_checkpoint_result, session_working_directory_context, session_working_directory_context_host_type, session_working_directory_context_with_client, settable_auth_info, settable_token_auth_info, settings_edit_operation, settings_edit_result, settings_edit_status, shell_cancel_user_requested_request, shell_credentials, shell_exec_request, shell_exec_result, shell_execute_user_requested_request, shell_init_profile, shell_init_script, shell_init_script_shell, shell_kill_request, shell_kill_result, shell_kill_signal, shell_options, shutdown_request, skill, skill_apply_install_request, skill_apply_uninstall_request, skill_discovery_path, skill_discovery_path_list, skill_discovery_scope, skill_installation_failure_reason, skill_installation_file_review, skill_installation_location, skill_installation_management_outcome, skill_installation_management_result, skill_installation_operation_request, skill_installation_operation_status, skill_installation_outcome, skill_installation_ownership_state, skill_installation_result, skill_installation_review, skill_installation_scope, skill_installation_session_state, skill_installation_source, skill_installations_request, skill_installation_summary, skill_install_plan, skill_list, skill_plan_install_request, skill_plan_uninstall_request, skill_provider_descriptor, skill_provider_list_request, skill_provider_list_result, skill_provider_read_request, skill_provider_read_result, skills_config_set_disabled_skills_request, skills_config_set_skill_disabled_request, skills_disable_request, skills_discover_request, skills_enable_request, skill_set_enabled_request, skills_get_discovery_paths_request, skills_get_invoked_result, skills_invoked_skill, skills_load_diagnostics, skill_uninstall_plan, slash_command_add_timeline_entry_result, slash_command_agent_prompt_result, slash_command_completed_result, slash_command_info, slash_command_input, slash_command_input_choice, slash_command_input_completion, slash_command_invocation_result, slash_command_kind, slash_command_model_picker_dialog, slash_command_select_subcommand_option, slash_command_select_subcommand_result, slash_command_set_model_result, slash_command_set_plan_model_result, slash_command_show_dialog_result, slash_command_text_result, slash_command_timeline_entry, staff_log_level_migration_status, staff_update_channel_migration_status, subagent_settings_entry, subagent_settings_entry_context_tier, system_message_block, task_agent_info, task_agent_progress, task_client_active_status, task_client_execution_mode, task_client_info, task_client_owner, task_client_owner_kind, task_client_owner_presence, task_client_progress, task_client_status, task_client_type, task_client_update, task_complete_data, task_completion_decision, task_execution_mode, task_info, task_kind, task_list, task_progress_line, tasks_cancel_request, tasks_cancel_result, tasks_get_current_promotable_result, tasks_get_progress_request, tasks_get_progress_result, task_shell_info, task_shell_info_attachment_mode, task_shell_progress, tasks_promote_current_to_background_result, tasks_promote_to_background_request, tasks_promote_to_background_result, tasks_refresh_result, tasks_register_request, tasks_register_result, tasks_remove_request, tasks_remove_result, tasks_send_message_request, tasks_send_message_result, tasks_start_agent_request, tasks_start_agent_result, task_status, tasks_update_request, tasks_update_result, tasks_wait_for_pending_result, telemetry_set_feature_overrides_request, token_auth_info, token_provider_auth_info, tool, tool_list, tool_result, tool_result_expanded, tool_result_new_message, tool_result_type, tools_execute_request, tools_get_builtin_descriptors_request, tools_get_builtin_descriptors_result, tools_get_current_metadata_result, tools_initialize_and_validate_result, tools_list_pending_requests_request, tools_list_request, tools_set_request, tools_set_result, tools_shell_descriptor_config, tools_task_complete_event_data_request, tools_update_subagent_settings_result, ui_auto_mode_switch_response, ui_elicitation_array_any_of_field, ui_elicitation_array_any_of_field_items, ui_elicitation_array_any_of_field_items_any_of, ui_elicitation_array_enum_field, ui_elicitation_array_enum_field_items, ui_elicitation_field_value, ui_elicitation_request, ui_elicitation_response, ui_elicitation_response_action, ui_elicitation_response_content, ui_elicitation_result, ui_elicitation_schema, ui_elicitation_schema_property, ui_elicitation_schema_property_boolean, ui_elicitation_schema_property_number, ui_elicitation_schema_property_number_type, ui_elicitation_schema_property_string, ui_elicitation_schema_property_string_format, ui_elicitation_string_enum_field, ui_elicitation_string_one_of_field, ui_elicitation_string_one_of_field_one_of, ui_ephemeral_query_request, ui_ephemeral_query_result, ui_exit_plan_mode_action, ui_exit_plan_mode_response, ui_handle_pending_auto_mode_switch_request, ui_handle_pending_elicitation_request, ui_handle_pending_exit_plan_mode_request, ui_handle_pending_result, ui_handle_pending_sampling_request, ui_handle_pending_sampling_response, ui_handle_pending_session_limits_exhausted_request, ui_handle_pending_user_input_request, ui_register_direct_auto_mode_switch_handler_result, ui_session_limits_exhausted_response, ui_session_limits_exhausted_response_action, ui_unregister_direct_auto_mode_switch_handler_request, ui_unregister_direct_auto_mode_switch_handler_result, ui_user_input_response, unsupported_enqueue_command_result, update_subagent_settings_request, usage_get_metrics_result, usage_set_code_changes_request, user_auth_info, user_requested_shell_command_result, user_setting_metadata, user_settings_apply_top_key_request, user_settings_apply_top_key_result, user_settings_build_runtime_request, user_settings_build_runtime_result, user_settings_edit_request, user_settings_get_paths_request, user_settings_get_paths_result, user_settings_get_result, user_settings_governance_keys_result, user_settings_host_context, user_settings_load_and_merge_repo_request, user_settings_load_and_merge_repo_result, user_settings_load_for_config_dir_request, user_settings_load_for_config_dir_result, user_settings_load_for_edit_result, user_settings_load_repo_request, user_settings_load_repo_result, user_settings_load_with_warning_result, user_settings_merge_managed_and_user_params, user_settings_merge_managed_and_user_result, user_settings_merge_repo_value_params, user_settings_merge_repo_value_result, user_settings_migrate_obsolete_on_disk_request, user_settings_migrate_obsolete_on_disk_result, user_settings_migrate_obsolete_on_disk_status, user_settings_migrate_staff_log_level_once_request, user_settings_migrate_staff_log_level_once_result, user_settings_migrate_staff_update_channel_once_result, user_settings_normalize_request, user_settings_normalize_result, user_settings_path_result, user_settings_problem, user_settings_problem_location, user_settings_problem_source, user_settings_problems_request, user_settings_problems_result, user_settings_reset_staff_model_selection_once_request, user_settings_reset_staff_model_selection_once_result, user_settings_set_hook_disabled_request, user_settings_set_hook_disabled_result, user_settings_set_request, user_settings_unknown_keys_warning_request, user_settings_unknown_keys_warning_result, user_settings_update_request, user_settings_update_result, user_settings_validate_request, user_settings_validate_result, user_settings_validation_issue, user_settings_write_all_request, visibility_get_result, visibility_set_request, visibility_set_result, workflow_abort_request, workflow_ack_result, workflow_agent_options, workflow_agent_request, workflow_agent_result, workflow_agent_summary, workflow_cancel_request, workflow_current_phase, workflow_declared_limits, workflow_durable_operation, workflow_execute_request, workflow_execute_result, workflow_get_run_progress_request, workflow_get_run_request, workflow_journal_get_request, workflow_journal_get_result, workflow_journal_put_request, workflow_list_runs_request, workflow_list_runs_result, workflow_log_line, workflow_log_line_kind, workflow_log_request, workflow_pause_checkpoint_action, workflow_pause_checkpoint_request, workflow_pause_checkpoint_result, workflow_pause_info, workflow_pause_request, workflow_phase_observation, workflow_phase_status, workflow_progress_line, workflow_progress_page, workflow_resume_request, workflow_resume_result, workflow_run_consumed, workflow_run_detail, workflow_run_failure, workflow_run_failure_kind, workflow_run_limits, workflow_run_options, workflow_run_request, workflow_run_result, workflow_run_status, workflow_run_summary, workflow_run_terminal, workflow_tool_resume_request, workflow_tool_run_options, workflow_tool_run_request, workspace_diff_contents, workspace_diff_file_change, workspace_diff_file_change_type, workspace_diff_mode, workspace_diff_result, workspaces_add_summary_request, workspaces_add_summary_result, workspaces_autopilot_objective_exists_result, workspaces_checkpoints, workspaces_create_directory_request, workspaces_create_file_request, workspaces_delete_autopilot_objective_result, workspaces_diff_request, workspaces_ensure_request, workspaces_get_workspace_result, workspaces_list_checkpoints_result, workspaces_list_files_result, workspaces_read_autopilot_objective_result, workspaces_read_checkpoint_request, workspaces_read_checkpoint_result, workspaces_read_file_request, workspaces_read_file_result, workspaces_remove_path_request, workspaces_rename_path_request, workspaces_save_large_paste_request, workspaces_save_large_paste_result, workspaces_stat_file_request, workspaces_stat_file_result, workspaces_truncate_summaries_request, workspace_summary_host_type, workspaces_update_metadata_request, workspaces_workspace_details_host_type, workspaces_write_autopilot_objective_request, workspaces_write_autopilot_objective_result, connector_session_account_result, session_auth_info_result, session_context_attribution, session_context_info, subagent_settings, task_progress, workspace_summary)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -55317,12 +58309,16 @@ class RPC:
         result["FeatureFlagsMetadataResult"] = to_class(_FeatureFlagsMetadataResult, self.feature_flags_metadata_result)
         result["FeatureFlagsResolveRequest"] = to_class(_FeatureFlagsResolveRequest, self.feature_flags_resolve_request)
         result["FeatureFlagsResolveResult"] = from_dict(from_bool, self.feature_flags_resolve_result)
+        result["FeatureFlagsResolveStartupGatesRequest"] = to_class(_FeatureFlagsResolveStartupGatesRequest, self.feature_flags_resolve_startup_gates_request)
+        result["FeatureFlagsResolveStartupGatesResult"] = from_dict(from_bool, self.feature_flags_resolve_startup_gates_result)
         result["FilterMapping"] = from_union([lambda x: from_dict(lambda x: to_enum(ContentFilterMode, x), x), lambda x: to_enum(ContentFilterMode, x)], self.filter_mapping)
         result["FleetStartRequest"] = to_class(FleetStartRequest, self.fleet_start_request)
         result["FleetStartResult"] = to_class(FleetStartResult, self.fleet_start_result)
         result["FolderTrustAddParams"] = to_class(FolderTrustAddParams, self.folder_trust_add_params)
         result["FolderTrustCheckParams"] = to_class(FolderTrustCheckParams, self.folder_trust_check_params)
         result["FolderTrustCheckResult"] = to_class(FolderTrustCheckResult, self.folder_trust_check_result)
+        result["FolderTrustIsTrustedParams"] = to_class(_FolderTrustIsTrustedParams, self.folder_trust_is_trusted_params)
+        result["ForceLoginOrgsDecision"] = to_class(_ForceLoginOrgsDecision, self.force_login_orgs_decision)
         result["GhCliAuthInfo"] = to_class(GhCLIAuthInfo, self.gh_cli_auth_info)
         result["GitCurrentBranchRemoteResult"] = to_class(_GitCurrentBranchRemoteResult, self.git_current_branch_remote_result)
         result["GitCwdRequest"] = to_class(_GitCwdRequest, self.git_cwd_request)
@@ -55442,6 +58438,7 @@ class RPC:
         result["LlmInferenceHttpResponseStartResult"] = to_class(LlmInferenceHTTPResponseStartResult, self.llm_inference_http_response_start_result)
         result["LlmInferenceSetProviderResult"] = to_class(LlmInferenceSetProviderResult, self.llm_inference_set_provider_result)
         result["LocalSessionMetadataValue"] = to_class(LocalSessionMetadataValue, self.local_session_metadata_value)
+        result["LocationPermissionsCleanupResult"] = to_class(_LocationPermissionsCleanupResult, self.location_permissions_cleanup_result)
         result["LoggedInUser"] = to_class(_LoggedInUser, self.logged_in_user)
         result["LoginProviderKind"] = to_enum(LoginProviderKind, self.login_provider_kind)
         result["LogRequest"] = to_class(LogRequest, self.log_request)
@@ -55457,19 +58454,44 @@ class RPC:
         result["ManagedPluginRetryEntry"] = to_class(ManagedPluginRetryEntry, self.managed_plugin_retry_entry)
         result["ManagedPluginRetryStatus"] = to_enum(ManagedPluginRetryStatus, self.managed_plugin_retry_status)
         result["ManagedSettingMeta"] = to_class(ManagedSettingMeta, self.managed_setting_meta)
+        result["ManagedSettingsApplyControlsParams"] = to_class(_ManagedSettingsApplyControlsParams, self.managed_settings_apply_controls_params)
+        result["ManagedSettingsApplyControlsResult"] = to_class(_ManagedSettingsApplyControlsResult, self.managed_settings_apply_controls_result)
+        result["ManagedSettingsBypassDisableSource"] = to_enum(_ManagedSettingsBypassDisableSource, self.managed_settings_bypass_disable_source)
+        result["ManagedSettingsBypassPolicyResolution"] = to_enum(_ManagedSettingsBypassPolicyResolution, self.managed_settings_bypass_policy_resolution)
         result["ManagedSettingsChannel"] = to_enum(ManagedSettingsChannel, self.managed_settings_channel)
         result["ManagedSettingsComposeLayer"] = to_class(ManagedSettingsComposeLayer, self.managed_settings_compose_layer)
         result["ManagedSettingsComposeRequest"] = to_class(ManagedSettingsComposeRequest, self.managed_settings_compose_request)
         result["ManagedSettingsComposeResult"] = to_class(ManagedSettingsComposeResult, self.managed_settings_compose_result)
         result["ManagedSettingsDiagnostic"] = to_class(ManagedSettingsDiagnostic, self.managed_settings_diagnostic)
         result["ManagedSettingsDiagnosticSeverity"] = to_enum(ManagedSettingsDiagnosticSeverity, self.managed_settings_diagnostic_severity)
+        result["ManagedSettingsIngestParams"] = to_class(_ManagedSettingsIngestParams, self.managed_settings_ingest_params)
+        result["ManagedSettingsIngestResult"] = to_class(_ManagedSettingsIngestResult, self.managed_settings_ingest_result)
         result["ManagedSettingsLayer"] = to_class(ManagedSettingsLayer, self.managed_settings_layer)
+        result["ManagedSettingsLoadRemoteControlParams"] = to_class(_ManagedSettingsLoadRemoteControlParams, self.managed_settings_load_remote_control_params)
+        result["ManagedSettingsLoadRemoteControlResult"] = to_class(_ManagedSettingsLoadRemoteControlResult, self.managed_settings_load_remote_control_result)
+        result["ManagedSettingsLogLevel"] = to_enum(_ManagedSettingsLogLevel, self.managed_settings_log_level)
+        result["ManagedSettingsLogMessage"] = to_class(_ManagedSettingsLogMessage, self.managed_settings_log_message)
         result["ManagedSettingsMeta"] = to_class(ManagedSettingsMeta, self.managed_settings_meta)
+        result["ManagedSettingsParseClientValueParams"] = to_class(_ManagedSettingsParseClientValueParams, self.managed_settings_parse_client_value_params)
+        result["ManagedSettingsParseClientValueResult"] = to_class(_ManagedSettingsParseClientValueResult, self.managed_settings_parse_client_value_result)
+        result["ManagedSettingsPolicyHelperAuthority"] = to_enum(_ManagedSettingsPolicyHelperAuthority, self.managed_settings_policy_helper_authority)
+        result["ManagedSettingsPolicyHelperReason"] = to_enum(_ManagedSettingsPolicyHelperReason, self.managed_settings_policy_helper_reason)
+        result["ManagedSettingsReadDeviceResult"] = to_class(_ManagedSettingsReadDeviceResult, self.managed_settings_read_device_result)
         result["ManagedSettingsReadResult"] = to_class(ManagedSettingsReadResult, self.managed_settings_read_result)
+        result["ManagedSettingsResolveBypassDisableTransitionParams"] = to_class(_ManagedSettingsResolveBypassDisableTransitionParams, self.managed_settings_resolve_bypass_disable_transition_params)
+        result["ManagedSettingsResolveBypassDisableTransitionResult"] = to_class(_ManagedSettingsResolveBypassDisableTransitionResult, self.managed_settings_resolve_bypass_disable_transition_result)
         result["ManagedSettingsResolvedData"] = to_class(ManagedSettingsResolvedData, self.managed_settings_resolved_data)
+        result["ManagedSettingsResolveDeviceForceLoginOrgsGateParams"] = to_class(_ManagedSettingsResolveDeviceForceLoginOrgsGateParams, self.managed_settings_resolve_device_force_login_orgs_gate_params)
+        result["ManagedSettingsResolveEffectiveValueParams"] = to_class(_ManagedSettingsResolveEffectiveValueParams, self.managed_settings_resolve_effective_value_params)
+        result["ManagedSettingsResolveEffectiveValueResult"] = to_class(_ManagedSettingsResolveEffectiveValueResult, self.managed_settings_resolve_effective_value_result)
         result["ManagedSettingsResolveRequest"] = to_class(ManagedSettingsResolveRequest, self.managed_settings_resolve_request)
         result["ManagedSettingsResolveResult"] = to_class(ManagedSettingsResolveResult, self.managed_settings_resolve_result)
+        result["ManagedSettingsResolveStartupPolicyParams"] = to_class(_ManagedSettingsResolveStartupPolicyParams, self.managed_settings_resolve_startup_policy_params)
+        result["ManagedSettingsResolveStartupPolicyResult"] = to_class(_ManagedSettingsResolveStartupPolicyResult, self.managed_settings_resolve_startup_policy_result)
+        result["ManagedSettingsRetainPolicyParams"] = to_class(_ManagedSettingsRetainPolicyParams, self.managed_settings_retain_policy_params)
         result["ManagedSettingsSchemaResult"] = to_class(ManagedSettingsSchemaResult, self.managed_settings_schema_result)
+        result["ManagedSettingsServerPolicyCacheMode"] = to_enum(_ManagedSettingsServerPolicyCacheMode, self.managed_settings_server_policy_cache_mode)
+        result["ManagedSettingsServerPolicyResolution"] = to_enum(_ManagedSettingsServerPolicyResolution, self.managed_settings_server_policy_resolution)
         result["ManagedSettingsValidateRequest"] = to_class(ManagedSettingsValidateRequest, self.managed_settings_validate_request)
         result["ManagedSettingsValidateResult"] = to_class(ManagedSettingsValidateResult, self.managed_settings_validate_result)
         result["ManagedSettingsValues"] = to_class(ManagedSettingsValues, self.managed_settings_values)
@@ -55859,6 +58881,8 @@ class RPC:
         result["PermissionsConfigureAdditionalContentExclusionPolicyScope"] = to_enum(AdditionalContentExclusionPolicyScope, self.permissions_configure_additional_content_exclusion_policy_scope)
         result["PermissionsConfigureParams"] = to_class(PermissionsConfigureParams, self.permissions_configure_params)
         result["PermissionsConfigureResult"] = to_class(PermissionsConfigureResult, self.permissions_configure_result)
+        result["PermissionsEvaluateManagedPolicyParams"] = to_class(_PermissionsEvaluateManagedPolicyParams, self.permissions_evaluate_managed_policy_params)
+        result["PermissionsEvaluateManagedPolicyResult"] = to_class(PermissionsEvaluateManagedPolicyResult, self.permissions_evaluate_managed_policy_result)
         result["PermissionsFolderTrustAddTrustedResult"] = to_class(PermissionsFolderTrustAddTrustedResult, self.permissions_folder_trust_add_trusted_result)
         result["PermissionsGetModeRequest"] = to_class(PermissionsGetModeRequest, self.permissions_get_mode_request)
         result["PermissionsGetModeResult"] = to_class(PermissionsGetModeResult, self.permissions_get_mode_result)
@@ -55895,6 +58919,8 @@ class RPC:
         result["PermissionsUrlsSetUnrestrictedModeResult"] = to_class(PermissionsUrlsSetUnrestrictedModeResult, self.permissions_urls_set_unrestricted_mode_result)
         result["PermissionUrlsConfig"] = to_class(PermissionUrlsConfig, self.permission_urls_config)
         result["PermissionUrlsSetUnrestrictedModeParams"] = to_class(PermissionUrlsSetUnrestrictedModeParams, self.permission_urls_set_unrestricted_mode_params)
+        result["PersistenceWriteRawJsonLockedRequest"] = to_class(PersistenceWriteRawJSONLockedRequest, self.persistence_write_raw_json_locked_request)
+        result["PersistenceWriteRawJsonLockedResult"] = to_class(PersistenceWriteRawJSONLockedResult, self.persistence_write_raw_json_locked_result)
         result["PingRequest"] = to_class(PingRequest, self.ping_request)
         result["PingResult"] = to_class(PingResult, self.ping_result)
         result["PlanReadResult"] = to_class(PlanReadResult, self.plan_read_result)
@@ -56039,11 +59065,17 @@ class RPC:
         result["RemoteSessionMetadataValue"] = to_class(RemoteSessionMetadataValue, self.remote_session_metadata_value)
         result["RemoteSessionMode"] = to_enum(RemoteSessionMode, self.remote_session_mode)
         result["RemoteSessionRepository"] = to_class(RemoteSessionRepository, self.remote_session_repository)
+        result["RepoSettingsEditRequest"] = to_class(_RepoSettingsEditRequest, self.repo_settings_edit_request)
+        result["RepoSettingsEditScope"] = to_enum(_RepoSettingsEditScope, self.repo_settings_edit_scope)
         result["RepoSettingsReadRawRequest"] = to_class(_RepoSettingsReadRawRequest, self.repo_settings_read_raw_request)
         result["RepoSettingsReadRawResult"] = to_class(_RepoSettingsReadRawResult, self.repo_settings_read_raw_result)
         result["RepoSettingsWriteAllRequest"] = to_class(_RepoSettingsWriteAllRequest, self.repo_settings_write_all_request)
         result["RepoSettingsWriteKeyRequest"] = to_class(_RepoSettingsWriteKeyRequest, self.repo_settings_write_key_request)
         result["ResponseFormat"] = to_class(ResponseFormat, self.response_format)
+        result["SandboxApplyDefaultsRequest"] = to_class(SandboxApplyDefaultsRequest, self.sandbox_apply_defaults_request)
+        result["SandboxCheckEnforcementCommandResult"] = from_bool(self.sandbox_check_enforcement_command_result)
+        result["SandboxCheckPlatformSupportResult"] = from_bool(self.sandbox_check_platform_support_result)
+        result["SandboxCheckWindowsHostLoopbackSupportResult"] = from_bool(self.sandbox_check_windows_host_loopback_support_result)
         result["SandboxConfig"] = to_class(SandboxConfig, self.sandbox_config)
         result["SandboxConfigAuth"] = to_class(SandboxConfigAuth, self.sandbox_config_auth)
         result["SandboxConfigSource"] = to_enum(SandboxConfigSource, self.sandbox_config_source)
@@ -56059,18 +59091,40 @@ class RPC:
         result["SandboxCredentialSuggestionsResult"] = to_class(SandboxCredentialSuggestionsResult, self.sandbox_credential_suggestions_result)
         result["SandboxDisableForSessionRequest"] = to_class(SandboxDisableForSessionRequest, self.sandbox_disable_for_session_request)
         result["SandboxDisableForSessionResult"] = to_class(SandboxDisableForSessionResult, self.sandbox_disable_for_session_result)
+        result["SandboxDocsUrlResult"] = to_class(SandboxDocsURLResult, self.sandbox_docs_url_result)
+        result["SandboxEffectiveForOptionalParams"] = to_class(_SandboxEffectiveForOptionalParams, self.sandbox_effective_for_optional_params)
+        result["SandboxEffectiveForOptionalResult"] = to_class(_SandboxEffectiveForOptionalResult, self.sandbox_effective_for_optional_result)
+        result["SandboxEnforcementCommandAllowedParams"] = to_class(_SandboxEnforcementCommandAllowedParams, self.sandbox_enforcement_command_allowed_params)
         result["SandboxEnforcementStatus"] = to_class(SandboxEnforcementStatus, self.sandbox_enforcement_status)
+        result["SandboxFilterPickerCandidatesParams"] = to_class(_SandboxFilterPickerCandidatesParams, self.sandbox_filter_picker_candidates_params)
+        result["SandboxFilterPickerCandidatesResult"] = to_class(_SandboxFilterPickerCandidatesResult, self.sandbox_filter_picker_candidates_result)
+        result["SandboxGetUnsupportedMessageResult"] = from_str(self.sandbox_get_unsupported_message_result)
+        result["SandboxGetUnsupportedSettingDisabledNoticeResult"] = from_str(self.sandbox_get_unsupported_setting_disabled_notice_result)
         result["SandboxGrantPathForRequestRequest"] = to_class(SandboxGrantPathForRequestRequest, self.sandbox_grant_path_for_request_request)
         result["SandboxGrantPathForRequestResult"] = to_class(SandboxGrantPathForRequestResult, self.sandbox_grant_path_for_request_result)
         result["SandboxHostCapability"] = to_class(SandboxHostCapability, self.sandbox_host_capability)
         result["SandboxHostCapabilityName"] = from_str(self.sandbox_host_capability_name)
         result["SandboxHostSupport"] = to_class(SandboxHostSupport, self.sandbox_host_support)
         result["SandboxMaskedEnvVar"] = to_class(SandboxMaskedEnvVar, self.sandbox_masked_env_var)
+        result["SandboxPickerCandidate"] = to_class(_SandboxPickerCandidate, self.sandbox_picker_candidate)
+        result["SandboxPreparePickerPolicyParams"] = to_class(_SandboxPreparePickerPolicyParams, self.sandbox_prepare_picker_policy_params)
+        result["SandboxPreparePickerPolicyResult"] = to_class(_SandboxPreparePickerPolicyResult, self.sandbox_prepare_picker_policy_result)
+        result["SandboxProxyCaCheckInstallationSupportResult"] = from_bool(self.sandbox_proxy_ca_check_installation_support_result)
+        result["SandboxProxyCaCheckRelevanceResult"] = from_bool(self.sandbox_proxy_ca_check_relevance_result)
         result["SandboxProxyCaCreateResult"] = to_class(SandboxProxyCACreateResult, self.sandbox_proxy_ca_create_result)
         result["SandboxProxyCaRequest"] = to_class(SandboxProxyCARequest, self.sandbox_proxy_ca_request)
         result["SandboxProxyCaState"] = to_enum(SandboxProxyCAState, self.sandbox_proxy_ca_state)
         result["SandboxProxyCaStatus"] = to_class(SandboxProxyCAStatus, self.sandbox_proxy_ca_status)
+        result["SandboxProxySecretGetResult"] = to_class(SandboxProxySecretGetResult, self.sandbox_proxy_secret_get_result)
+        result["SandboxProxySecretLocation"] = to_class(SandboxProxySecretLocation, self.sandbox_proxy_secret_location)
+        result["SandboxProxySecretSaveRequest"] = to_class(SandboxProxySecretSaveRequest, self.sandbox_proxy_secret_save_request)
+        result["SandboxProxySecretSaveResult"] = to_class(SandboxProxySecretSaveResult, self.sandbox_proxy_secret_save_result)
+        result["SandboxResolveFlooredConfigParams"] = to_class(_SandboxResolveFlooredConfigParams, self.sandbox_resolve_floored_config_params)
+        result["SandboxResolveFlooredConfigResult"] = to_class(SandboxResolveFlooredConfigResult, self.sandbox_resolve_floored_config_result)
         result["SandboxSessionChange"] = to_enum(SandboxSessionChange, self.sandbox_session_change)
+        result["SandboxSettingsApplyDefaultsResult"] = from_dict(lambda x: x, self.sandbox_settings_apply_defaults_result)
+        result["SandboxUnsupportedStartupNoticeParams"] = to_class(_SandboxUnsupportedStartupNoticeParams, self.sandbox_unsupported_startup_notice_params)
+        result["SandboxUnsupportedStartupNoticeResult"] = to_class(_SandboxUnsupportedStartupNoticeResult, self.sandbox_unsupported_startup_notice_result)
         result["ScheduleAddAtRequest"] = to_class(ScheduleAddAtRequest, self.schedule_add_at_request)
         result["ScheduleAddCronRequest"] = to_class(ScheduleAddCronRequest, self.schedule_add_cron_request)
         result["ScheduleAddRequest"] = to_class(ScheduleAddRequest, self.schedule_add_request)
@@ -56374,6 +59428,8 @@ class RPC:
         result["SlashCommandShowDialogResult"] = to_class(SlashCommandShowDialogResult, self.slash_command_show_dialog_result)
         result["SlashCommandTextResult"] = to_class(SlashCommandTextResult, self.slash_command_text_result)
         result["SlashCommandTimelineEntry"] = to_class(SlashCommandTimelineEntry, self.slash_command_timeline_entry)
+        result["StaffLogLevelMigrationStatus"] = to_enum(StaffLogLevelMigrationStatus, self.staff_log_level_migration_status)
+        result["StaffUpdateChannelMigrationStatus"] = to_enum(StaffUpdateChannelMigrationStatus, self.staff_update_channel_migration_status)
         result["SubagentSettingsEntry"] = to_class(SubagentSettingsEntry, self.subagent_settings_entry)
         result["SubagentSettingsEntryContextTier"] = to_enum(SubagentSettingsEntryContextTier, self.subagent_settings_entry_context_tier)
         result["SystemMessageBlock"] = to_class(SystemMessageBlock, self.system_message_block)
@@ -56490,20 +59546,47 @@ class RPC:
         result["UserSettingMetadata"] = to_class(UserSettingMetadata, self.user_setting_metadata)
         result["UserSettingsApplyTopKeyRequest"] = to_class(UserSettingsApplyTopKeyRequest, self.user_settings_apply_top_key_request)
         result["UserSettingsApplyTopKeyResult"] = to_class(UserSettingsApplyTopKeyResult, self.user_settings_apply_top_key_result)
+        result["UserSettingsBuildRuntimeRequest"] = to_class(_UserSettingsBuildRuntimeRequest, self.user_settings_build_runtime_request)
+        result["UserSettingsBuildRuntimeResult"] = from_dict(lambda x: x, self.user_settings_build_runtime_result)
         result["UserSettingsEditRequest"] = to_class(_UserSettingsEditRequest, self.user_settings_edit_request)
         result["UserSettingsGetPathsRequest"] = to_class(UserSettingsGetPathsRequest, self.user_settings_get_paths_request)
         result["UserSettingsGetPathsResult"] = to_class(UserSettingsGetPathsResult, self.user_settings_get_paths_result)
         result["UserSettingsGetResult"] = to_class(UserSettingsGetResult, self.user_settings_get_result)
         result["UserSettingsGovernanceKeysResult"] = to_class(UserSettingsGovernanceKeysResult, self.user_settings_governance_keys_result)
+        result["UserSettingsHostContext"] = to_class(UserSettingsHostContext, self.user_settings_host_context)
+        result["UserSettingsLoadAndMergeRepoRequest"] = to_class(_UserSettingsLoadAndMergeRepoRequest, self.user_settings_load_and_merge_repo_request)
+        result["UserSettingsLoadAndMergeRepoResult"] = to_class(_UserSettingsLoadAndMergeRepoResult, self.user_settings_load_and_merge_repo_result)
+        result["UserSettingsLoadForConfigDirRequest"] = to_class(_UserSettingsLoadForConfigDirRequest, self.user_settings_load_for_config_dir_request)
+        result["UserSettingsLoadForConfigDirResult"] = from_dict(lambda x: x, self.user_settings_load_for_config_dir_result)
         result["UserSettingsLoadForEditResult"] = to_class(UserSettingsLoadForEditResult, self.user_settings_load_for_edit_result)
+        result["UserSettingsLoadRepoRequest"] = to_class(UserSettingsLoadRepoRequest, self.user_settings_load_repo_request)
+        result["UserSettingsLoadRepoResult"] = to_class(UserSettingsLoadRepoResult, self.user_settings_load_repo_result)
+        result["UserSettingsLoadWithWarningResult"] = to_class(UserSettingsLoadWithWarningResult, self.user_settings_load_with_warning_result)
+        result["UserSettingsMergeManagedAndUserParams"] = to_class(_UserSettingsMergeManagedAndUserParams, self.user_settings_merge_managed_and_user_params)
+        result["UserSettingsMergeManagedAndUserResult"] = to_class(UserSettingsMergeManagedAndUserResult, self.user_settings_merge_managed_and_user_result)
+        result["UserSettingsMergeRepoValueParams"] = to_class(_UserSettingsMergeRepoValueParams, self.user_settings_merge_repo_value_params)
+        result["UserSettingsMergeRepoValueResult"] = to_class(UserSettingsMergeRepoValueResult, self.user_settings_merge_repo_value_result)
+        result["UserSettingsMigrateObsoleteOnDiskRequest"] = to_class(_UserSettingsMigrateObsoleteOnDiskRequest, self.user_settings_migrate_obsolete_on_disk_request)
+        result["UserSettingsMigrateObsoleteOnDiskResult"] = to_class(_UserSettingsMigrateObsoleteOnDiskResult, self.user_settings_migrate_obsolete_on_disk_result)
+        result["UserSettingsMigrateObsoleteOnDiskStatus"] = to_enum(_UserSettingsMigrateObsoleteOnDiskStatus, self.user_settings_migrate_obsolete_on_disk_status)
+        result["UserSettingsMigrateStaffLogLevelOnceRequest"] = to_class(_UserSettingsMigrateStaffLogLevelOnceRequest, self.user_settings_migrate_staff_log_level_once_request)
+        result["UserSettingsMigrateStaffLogLevelOnceResult"] = to_class(_UserSettingsMigrateStaffLogLevelOnceResult, self.user_settings_migrate_staff_log_level_once_result)
+        result["UserSettingsMigrateStaffUpdateChannelOnceResult"] = to_class(_UserSettingsMigrateStaffUpdateChannelOnceResult, self.user_settings_migrate_staff_update_channel_once_result)
         result["UserSettingsNormalizeRequest"] = to_class(UserSettingsNormalizeRequest, self.user_settings_normalize_request)
         result["UserSettingsNormalizeResult"] = to_class(UserSettingsNormalizeResult, self.user_settings_normalize_result)
+        result["UserSettingsPathResult"] = to_class(UserSettingsPathResult, self.user_settings_path_result)
         result["UserSettingsProblem"] = to_class(UserSettingsProblem, self.user_settings_problem)
         result["UserSettingsProblemLocation"] = to_class(UserSettingsProblemLocation, self.user_settings_problem_location)
         result["UserSettingsProblemSource"] = to_class(UserSettingsProblemSource, self.user_settings_problem_source)
         result["UserSettingsProblemsRequest"] = to_class(UserSettingsProblemsRequest, self.user_settings_problems_request)
         result["UserSettingsProblemsResult"] = to_class(UserSettingsProblemsResult, self.user_settings_problems_result)
+        result["UserSettingsResetStaffModelSelectionOnceRequest"] = to_class(_UserSettingsResetStaffModelSelectionOnceRequest, self.user_settings_reset_staff_model_selection_once_request)
+        result["UserSettingsResetStaffModelSelectionOnceResult"] = to_class(_UserSettingsResetStaffModelSelectionOnceResult, self.user_settings_reset_staff_model_selection_once_result)
+        result["UserSettingsSetHookDisabledRequest"] = to_class(_UserSettingsSetHookDisabledRequest, self.user_settings_set_hook_disabled_request)
+        result["UserSettingsSetHookDisabledResult"] = to_class(_UserSettingsSetHookDisabledResult, self.user_settings_set_hook_disabled_result)
         result["UserSettingsSetRequest"] = to_class(UserSettingsSetRequest, self.user_settings_set_request)
+        result["UserSettingsUnknownKeysWarningRequest"] = to_class(_UserSettingsUnknownKeysWarningRequest, self.user_settings_unknown_keys_warning_request)
+        result["UserSettingsUnknownKeysWarningResult"] = to_class(_UserSettingsUnknownKeysWarningResult, self.user_settings_unknown_keys_warning_result)
         result["UserSettingsUpdateRequest"] = to_class(_UserSettingsUpdateRequest, self.user_settings_update_request)
         result["UserSettingsUpdateResult"] = to_class(_UserSettingsUpdateResult, self.user_settings_update_result)
         result["UserSettingsValidateRequest"] = to_class(UserSettingsValidateRequest, self.user_settings_validate_request)
@@ -57025,6 +60108,7 @@ EventsCursorStatus = CursorStatus
 ExternalToolResult = ExternalToolTextResultForLlm
 ExternalToolTextResultForLlmContentResourceLinkIconTheme = Theme
 FeatureFlagsResolveResult = dict
+FeatureFlagsResolveStartupGatesResult = dict
 FilterMapping = dict
 HistoryCompactRequest = Any
 InstructionDiscoveryPathKind = DebugCollectLogsEntryKind
@@ -57070,7 +60154,15 @@ ProviderEndpointWireApi = ProviderWireAPI
 ProviderGetEndpointRequest = Any
 QuotaTakeWarningsResult = list
 RemoteSessionMetadataTaskType = TaskType
+SandboxCheckEnforcementCommandResult = bool
+SandboxCheckPlatformSupportResult = bool
+SandboxCheckWindowsHostLoopbackSupportResult = bool
+SandboxGetUnsupportedMessageResult = str
+SandboxGetUnsupportedSettingDisabledNoticeResult = str
 SandboxHostCapabilityName = str
+SandboxProxyCaCheckInstallationSupportResult = bool
+SandboxProxyCaCheckRelevanceResult = bool
+SandboxSettingsApplyDefaultsResult = dict
 SessionAuthInfoResult = AuthIdentity | None
 SessionCancelAllBackgroundAgentsResult = int
 SessionContextHostType = HostType
@@ -57090,6 +60182,8 @@ SessionWorkingDirectoryContextHostType = HostType
 TaskInfoExecutionMode = TaskExecutionMode
 TaskInfoStatus = TaskStatus
 ToolResult = ToolResultExpanded
+UserSettingsBuildRuntimeResult = dict
+UserSettingsLoadForConfigDirResult = dict
 WorkspaceSummaryHostType = HostType
 WorkspacesWorkspaceDetailsHostType = HostType
 
@@ -57119,6 +60213,123 @@ def _patch_model_capabilities(data: dict) -> dict:
         elif "max_context_window_tokens" not in caps["limits"]:
             caps["limits"]["max_context_window_tokens"] = 0
     return data
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class ServerSandboxProxyCaApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def check_installation_support(self, *, timeout: float | None = None) -> bool:
+        "Reports whether this runtime process can offer installing the sandbox credential-proxy certificate authority into OS trust.\n\nReturns:\n    True when this process can offer installing the sandbox credential-proxy certificate authority into OS trust."
+        return bool(await self._client.request("sandbox.proxyCa.checkInstallationSupport", {}, **_timeout_kwargs(timeout)))
+
+    async def check_relevance(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> bool:
+        "Reports whether this sandbox configuration uses the credential proxy and can need certificate-authority setup.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    True when the sandbox configuration uses the credential proxy and can need certificate-authority setup."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return bool(await self._client.request("sandbox.proxyCa.checkRelevance", params_dict, **_timeout_kwargs(timeout)))
+
+    async def get_status(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCAStatus:
+        "Reports whether the persistent certificate authority of the sandbox credential proxy exists, whether OS trust includes it, and whether it must be rotated. Changes nothing.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.getStatus", params_dict, **_timeout_kwargs(timeout)))
+
+    async def create(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCACreateResult:
+        "Creates the persistent certificate authority of the sandbox credential proxy if none is stored, without changing OS trust, and returns the path of its public certificate. Keeps an existing certificate authority, even one that must be rotated. Fails where OS trust is unsupported. Trust it with sandbox.proxyCa.trust: the CLI trusts only the hosts in the saved user settings, so it refuses a certificate authority that also covers hosts from sandboxConfig.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Result of creating the persistent certificate authority of the sandbox credential proxy."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return SandboxProxyCACreateResult.from_dict(await self._client.request("sandbox.proxyCa.create", params_dict, **_timeout_kwargs(timeout)))
+
+    async def rotate(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCAStatus:
+        "Replaces the persistent certificate authority of the sandbox credential proxy with a new one for the current credential hosts. If OS trust included the old one, removes it and trusts the new one, which can show an OS authentication prompt. Running sandboxed tools keep the old certificate authority until they restart.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.rotate", params_dict, **_timeout_kwargs(timeout)))
+
+    async def trust(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCAStatus:
+        "Adds the persistent certificate authority of the sandbox credential proxy to OS trust, so sandboxed clients that read only OS trust accept the proxy. Call create first. Refuses a certificate authority that is not constrained to the current credential hosts. Can show an OS authentication prompt.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.trust", params_dict, **_timeout_kwargs(timeout)))
+
+    async def remove(self, *, timeout: float | None = None) -> SandboxProxyCAStatus:
+        "Removes the persistent certificate authority of the sandbox credential proxy from OS trust. Keeps the stored certificate authority. Can show an OS authentication prompt. Sandboxed clients that read only OS trust then reject the proxy; clients that read the per-process certificate bundle continue to work.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
+        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.remove", {}, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class ServerSandboxApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.proxy_ca = ServerSandboxProxyCaApi(client)
+
+    async def get_host_support(self, *, timeout: float | None = None) -> SandboxHostSupport:
+        "Reports whether the host running this runtime can run the command sandbox, without starting a session or spawning a sandboxed command.\n\nReturns:\n    Whether the host running this runtime can run the command sandbox. The runtime checks `supported` once per process. A capability answer can change while the process runs, for example after the user installs a missing package."
+        return SandboxHostSupport.from_dict(await self._client.request("sandbox.getHostSupport", {}, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class ServerUserSettingsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def get(self, *, timeout: float | None = None) -> UserSettingsGetResult:
+        "Lists every known user setting from settings.json, each with its effective value, its default, and whether it is at the default — so settings the user has never set still appear with their default value. Does not include repository- or enterprise-managed overrides that the runtime layers on top at session time.\n\nReturns:\n    Per-key metadata for every known user setting in settings.json, including settings left at their default. Excludes repository- and enterprise-managed overrides."
+        return UserSettingsGetResult.from_dict(await self._client.request("user.settings.get", {}, **_timeout_kwargs(timeout)))
+
+    async def set(self, params: UserSettingsSetRequest, *, timeout: float | None = None) -> None:
+        "Writes one or more user settings to settings.json, replacing each provided top-level key. A key whose value is null is removed.\n\nArgs:\n    params: Partial user settings to write to settings.json. Each top-level key is written individually, replacing the existing value; a key whose value is null is removed."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        await self._client.request("user.settings.set", params_dict, **_timeout_kwargs(timeout))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class ServerUserApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.settings = ServerUserSettingsApi(client)
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class ServerManagedSettingsPermissionsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def evaluate(self, params: ManagedPermissionsEvaluateRequest, *, timeout: float | None = None) -> ManagedPermissionsEvaluateResult:
+        "Pure, sessionless evaluation of operations against a supplied permissionsContext. Performs no policy discovery, I/O, prompting, navigation, permission grants, or sandbox changes. Obtain the context from managedSettings.resolve or session.managedSettings.get, or reuse an in-memory context. Results preserve input order and duplicates. Consumers must block deny, obtain approval for ask, and use their normal permission flow for unmanaged. Unknown policy returns failClosed with every operation denied. This is not a substitute for user permissions or other security controls.\n\nArgs:\n    params: Managed policy context and ordered operations for pure, sessionless evaluation.\n\nReturns:\n    Ordered managed permission verdicts and the supplied policy's fail-closed posture."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return ManagedPermissionsEvaluateResult.from_dict(await self._client.request("managedSettings.permissions.evaluate", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class ServerManagedSettingsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.permissions = ServerManagedSettingsPermissionsApi(client)
+
+    async def read(self, *, timeout: float | None = None) -> ManagedSettingsReadResult:
+        "Discovers device-managed settings from production MDM and managed-file sources, validates them against the runtime-owned managed-settings schema, and returns the canonical JSON without requiring a session. `managedSettings.resolve` returns the same device settings together with the account's server policy.\n\nReturns:\n    Validated device-managed settings discovered before a session exists."
+        return ManagedSettingsReadResult.from_dict(await self._client.request("managedSettings.read", {}, **_timeout_kwargs(timeout)))
+
+    async def clear_cache(self, *, timeout: float | None = None) -> None:
+        "Force-refreshes enterprise managed settings for every account: wipes the persistent server-policy cache (the whole `<cacheHome>/managed-settings` directory) and drops this runtime process's in-memory retained server policy. It does not itself fetch policy — the effect is that the next time a session resolves managed settings for an account, that resolution re-fetches the account's org policy from the network instead of serving a cached response. Note that `managedSettings.read` returns only device/MDM settings and never triggers the account server-policy fetch, so a host implementing \"sync account policy\" should call `managedSettings.resolve` or start a fresh session resolution rather than treat a subsequent `managedSettings.read` as the refreshed org policy. Mirrors the invalidation a sign-out performs, broadened from the one signing-out account to all of them; device/MDM layers describe the machine, not the account, and are left untouched. Rejects if the on-disk cache cannot be removed."
+        await self._client.request("managedSettings.clearCache", {}, **_timeout_kwargs(timeout))
+
+    async def resolve(self, params: ManagedSettingsResolveRequest, *, timeout: float | None = None) -> ManagedSettingsResolveResult:
+        "Resolves the effective enterprise managed settings without a session, from the device channel and, when an account is available, the account's server policy through the same per-account cache sessions use. A cached server policy less than an hour old is used without a fetch; otherwise the policy is fetched, and when the fetch fails a cached policy up to 24 hours old is used instead, unless `forceRemoteSettingsRefresh` requires a live fetch. With no account requested or signed in, it reports device policy only; signing out removes the account's cached policy. It can fetch server policy over the network when the cache is stale, so call it off latency-critical paths such as startup rather than before listing models. The policy helper is not run. `layers` lists each channel's document before merging, and `values` and `meta` carry typed effective values and their lock state for the keys typed so far.\n\nArgs:\n    params: Optional opaque account selection or GitHub token whose managed settings are resolved.\n\nReturns:\n    Effective enterprise managed settings for an account, resolved without a session."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return ManagedSettingsResolveResult.from_dict(await self._client.request("managedSettings.resolve", params_dict, **_timeout_kwargs(timeout)))
+
+    async def schema(self, *, timeout: float | None = None) -> ManagedSettingsSchemaResult:
+        "Returns the managed-settings authoring JSON schema with descriptive `x-composition` annotations aligned with the shared settings-engine vocabulary. These annotations are not a complete runtime composition contract: model, effortLevel, and contextTier remain coupled. Use `managedSettings.compose` for the runtime's effective result. Performs no I/O.\n\nReturns:\n    The authoring JSON schema for managed settings recognized by this runtime."
+        return ManagedSettingsSchemaResult.from_dict(await self._client.request("managedSettings.schema", {}, **_timeout_kwargs(timeout)))
+
+    async def validate(self, params: ManagedSettingsValidateRequest, *, timeout: float | None = None) -> ManagedSettingsValidateResult:
+        "Validates a candidate managed-settings document the way the runtime validates delivered policy, without applying it. Reports errors that would reject the document, warnings for content the runtime ignores, and the canonical document it would apply. Document text nested more than 64 levels deep is rejected. Performs no I/O.\n\nArgs:\n    params: A candidate managed-settings document to validate without applying it.\n\nReturns:\n    Result of validating a managed-settings document."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return ManagedSettingsValidateResult.from_dict(await self._client.request("managedSettings.validate", params_dict, **_timeout_kwargs(timeout)))
+
+    async def compose(self, params: ManagedSettingsComposeRequest, *, timeout: float | None = None) -> ManagedSettingsComposeResult:
+        "Merges candidate managed-settings documents for the device, server, and policy-helper channels into the effective settings the runtime would enforce on this host, using the same precedence and composition rules as live resolution, without applying them. Like live resolution, a server's advisory sandbox force-enable is declined on a host that cannot run the sandbox. Does not fetch policy or read policy files, but may perform blocking OS or subprocess probes for sandbox support. Preview documents are limited to 1 MiB and 64 levels of nesting.\n\nArgs:\n    params: Candidate managed-settings documents to merge without applying them.\n\nReturns:\n    The effective managed settings the runtime would enforce for the given documents, in the same shape `managedSettings.resolve` returns."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return ManagedSettingsComposeResult.from_dict(await self._client.request("managedSettings.compose", params_dict, **_timeout_kwargs(timeout)))
 
 
 # Experimental: this API group is experimental and may change or be removed.
@@ -57192,47 +60403,6 @@ class ServerModelsApi:
     async def get_built_in_catalog(self, *, timeout: float | None = None) -> BuiltInModelCatalog:
         "Returns the running runtime's complete catalog of well-known built-in model IDs without authentication or network access.\n\nReturns:\n    The running runtime's complete catalog of well-known built-in model IDs, including supported models and additional IDs with built-in metadata."
         return BuiltInModelCatalog.from_dict(await self._client.request("models.getBuiltInCatalog", {}, **_timeout_kwargs(timeout)))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class ServerSandboxProxyCaApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-
-    async def get_status(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCAStatus:
-        "Reports whether the persistent certificate authority of the sandbox credential proxy exists, whether OS trust includes it, and whether it must be rotated. Changes nothing.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.getStatus", params_dict, **_timeout_kwargs(timeout)))
-
-    async def create(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCACreateResult:
-        "Creates the persistent certificate authority of the sandbox credential proxy if none is stored, without changing OS trust, and returns the path of its public certificate. Keeps an existing certificate authority, even one that must be rotated. Fails where OS trust is unsupported. Trust it with sandbox.proxyCa.trust: the CLI trusts only the hosts in the saved user settings, so it refuses a certificate authority that also covers hosts from sandboxConfig.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Result of creating the persistent certificate authority of the sandbox credential proxy."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return SandboxProxyCACreateResult.from_dict(await self._client.request("sandbox.proxyCa.create", params_dict, **_timeout_kwargs(timeout)))
-
-    async def rotate(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCAStatus:
-        "Replaces the persistent certificate authority of the sandbox credential proxy with a new one for the current credential hosts. If OS trust included the old one, removes it and trusts the new one, which can show an OS authentication prompt. Running sandboxed tools keep the old certificate authority until they restart.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.rotate", params_dict, **_timeout_kwargs(timeout)))
-
-    async def trust(self, params: SandboxProxyCARequest, *, timeout: float | None = None) -> SandboxProxyCAStatus:
-        "Adds the persistent certificate authority of the sandbox credential proxy to OS trust, so sandboxed clients that read only OS trust accept the proxy. Call create first. Refuses a certificate authority that is not constrained to the current credential hosts. Can show an OS authentication prompt.\n\nArgs:\n    params: Identifies the credential hosts that the persistent certificate authority of the sandbox credential proxy must cover. The runtime always adds the hosts from the saved user settings.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.trust", params_dict, **_timeout_kwargs(timeout)))
-
-    async def remove(self, *, timeout: float | None = None) -> SandboxProxyCAStatus:
-        "Removes the persistent certificate authority of the sandbox credential proxy from OS trust. Keeps the stored certificate authority. Can show an OS authentication prompt. Sandboxed clients that read only OS trust then reject the proxy; clients that read the per-process certificate bundle continue to work.\n\nReturns:\n    Status of the persistent certificate authority of the sandbox credential proxy."
-        return SandboxProxyCAStatus.from_dict(await self._client.request("sandbox.proxyCa.remove", {}, **_timeout_kwargs(timeout)))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class ServerSandboxApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-        self.proxy_ca = ServerSandboxProxyCaApi(client)
-
-    async def get_host_support(self, *, timeout: float | None = None) -> SandboxHostSupport:
-        "Reports whether the host running this runtime can run the command sandbox, without starting a session or spawning a sandboxed command.\n\nReturns:\n    Whether the host running this runtime can run the command sandbox. The runtime checks `supported` once per process. A capability answer can change while the process runs, for example after the user installs a missing package."
-        return SandboxHostSupport.from_dict(await self._client.request("sandbox.getHostSupport", {}, **_timeout_kwargs(timeout)))
 
 
 # Experimental: this API group is experimental and may change or be removed.
@@ -57635,73 +60805,6 @@ class ServerCommandsApi:
 
 
 # Experimental: this API group is experimental and may change or be removed.
-class ServerUserSettingsApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-
-    async def get(self, *, timeout: float | None = None) -> UserSettingsGetResult:
-        "Lists every known user setting from settings.json, each with its effective value, its default, and whether it is at the default — so settings the user has never set still appear with their default value. Does not include repository- or enterprise-managed overrides that the runtime layers on top at session time.\n\nReturns:\n    Per-key metadata for every known user setting in settings.json, including settings left at their default. Excludes repository- and enterprise-managed overrides."
-        return UserSettingsGetResult.from_dict(await self._client.request("user.settings.get", {}, **_timeout_kwargs(timeout)))
-
-    async def set(self, params: UserSettingsSetRequest, *, timeout: float | None = None) -> None:
-        "Writes one or more user settings to settings.json, replacing each provided top-level key. A key whose value is null is removed.\n\nArgs:\n    params: Partial user settings to write to settings.json. Each top-level key is written individually, replacing the existing value; a key whose value is null is removed."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        await self._client.request("user.settings.set", params_dict, **_timeout_kwargs(timeout))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class ServerUserApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-        self.settings = ServerUserSettingsApi(client)
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class ServerManagedSettingsPermissionsApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-
-    async def evaluate(self, params: ManagedPermissionsEvaluateRequest, *, timeout: float | None = None) -> ManagedPermissionsEvaluateResult:
-        "Pure, sessionless evaluation of operations against a supplied permissionsContext. Performs no policy discovery, I/O, prompting, navigation, permission grants, or sandbox changes. Obtain the context from managedSettings.resolve or session.managedSettings.get, or reuse an in-memory context. Results preserve input order and duplicates. Consumers must block deny, obtain approval for ask, and use their normal permission flow for unmanaged. Unknown policy returns failClosed with every operation denied. This is not a substitute for user permissions or other security controls.\n\nArgs:\n    params: Managed policy context and ordered operations for pure, sessionless evaluation.\n\nReturns:\n    Ordered managed permission verdicts and the supplied policy's fail-closed posture."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return ManagedPermissionsEvaluateResult.from_dict(await self._client.request("managedSettings.permissions.evaluate", params_dict, **_timeout_kwargs(timeout)))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class ServerManagedSettingsApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-        self.permissions = ServerManagedSettingsPermissionsApi(client)
-
-    async def read(self, *, timeout: float | None = None) -> ManagedSettingsReadResult:
-        "Discovers device-managed settings from production MDM and managed-file sources, validates them against the runtime-owned managed-settings schema, and returns the canonical JSON without requiring a session. `managedSettings.resolve` returns the same device settings together with the account's server policy.\n\nReturns:\n    Validated device-managed settings discovered before a session exists."
-        return ManagedSettingsReadResult.from_dict(await self._client.request("managedSettings.read", {}, **_timeout_kwargs(timeout)))
-
-    async def clear_cache(self, *, timeout: float | None = None) -> None:
-        "Force-refreshes enterprise managed settings for every account: wipes the persistent server-policy cache (the whole `<cacheHome>/managed-settings` directory) and drops this runtime process's in-memory retained server policy. It does not itself fetch policy — the effect is that the next time a session resolves managed settings for an account, that resolution re-fetches the account's org policy from the network instead of serving a cached response. Note that `managedSettings.read` returns only device/MDM settings and never triggers the account server-policy fetch, so a host implementing \"sync account policy\" should call `managedSettings.resolve` or start a fresh session resolution rather than treat a subsequent `managedSettings.read` as the refreshed org policy. Mirrors the invalidation a sign-out performs, broadened from the one signing-out account to all of them; device/MDM layers describe the machine, not the account, and are left untouched. Rejects if the on-disk cache cannot be removed."
-        await self._client.request("managedSettings.clearCache", {}, **_timeout_kwargs(timeout))
-
-    async def resolve(self, params: ManagedSettingsResolveRequest, *, timeout: float | None = None) -> ManagedSettingsResolveResult:
-        "Resolves the effective enterprise managed settings without a session, from the device channel and, when an account is available, the account's server policy through the same per-account cache sessions use. A cached server policy less than an hour old is used without a fetch; otherwise the policy is fetched, and when the fetch fails a cached policy up to 24 hours old is used instead, unless `forceRemoteSettingsRefresh` requires a live fetch. With no account requested or signed in, it reports device policy only; signing out removes the account's cached policy. It can fetch server policy over the network when the cache is stale, so call it off latency-critical paths such as startup rather than before listing models. The policy helper is not run. `layers` lists each channel's document before merging, and `values` and `meta` carry typed effective values and their lock state for the keys typed so far.\n\nArgs:\n    params: Optional opaque account selection or GitHub token whose managed settings are resolved.\n\nReturns:\n    Effective enterprise managed settings for an account, resolved without a session."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return ManagedSettingsResolveResult.from_dict(await self._client.request("managedSettings.resolve", params_dict, **_timeout_kwargs(timeout)))
-
-    async def schema(self, *, timeout: float | None = None) -> ManagedSettingsSchemaResult:
-        "Returns the managed-settings authoring JSON schema with descriptive `x-composition` annotations aligned with the shared settings-engine vocabulary. These annotations are not a complete runtime composition contract: model, effortLevel, and contextTier remain coupled. Use `managedSettings.compose` for the runtime's effective result. Performs no I/O.\n\nReturns:\n    The authoring JSON schema for managed settings recognized by this runtime."
-        return ManagedSettingsSchemaResult.from_dict(await self._client.request("managedSettings.schema", {}, **_timeout_kwargs(timeout)))
-
-    async def validate(self, params: ManagedSettingsValidateRequest, *, timeout: float | None = None) -> ManagedSettingsValidateResult:
-        "Validates a candidate managed-settings document the way the runtime validates delivered policy, without applying it. Reports errors that would reject the document, warnings for content the runtime ignores, and the canonical document it would apply. Document text nested more than 64 levels deep is rejected. Performs no I/O.\n\nArgs:\n    params: A candidate managed-settings document to validate without applying it.\n\nReturns:\n    Result of validating a managed-settings document."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return ManagedSettingsValidateResult.from_dict(await self._client.request("managedSettings.validate", params_dict, **_timeout_kwargs(timeout)))
-
-    async def compose(self, params: ManagedSettingsComposeRequest, *, timeout: float | None = None) -> ManagedSettingsComposeResult:
-        "Merges candidate managed-settings documents for the device, server, and policy-helper channels into the effective settings the runtime would enforce on this host, using the same precedence and composition rules as live resolution, without applying them. Like live resolution, a server's advisory sandbox force-enable is declined on a host that cannot run the sandbox. Does not fetch policy or read policy files, but may perform blocking OS or subprocess probes for sandbox support. Preview documents are limited to 1 MiB and 64 levels of nesting.\n\nArgs:\n    params: Candidate managed-settings documents to merge without applying them.\n\nReturns:\n    The effective managed settings the runtime would enforce for the given documents, in the same shape `managedSettings.resolve` returns."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return ManagedSettingsComposeResult.from_dict(await self._client.request("managedSettings.compose", params_dict, **_timeout_kwargs(timeout)))
-
-
-# Experimental: this API group is experimental and may change or be removed.
 class ServerRuntimeApi:
     def __init__(self, client: "JsonRpcClient"):
         self._client = client
@@ -57910,11 +61013,13 @@ class ServerRpc:
     """Typed server-scoped RPC methods."""
     def __init__(self, client: "JsonRpcClient"):
         self._client = client
+        self.sandbox = ServerSandboxApi(client)
+        self.user = ServerUserApi(client)
+        self.managed_settings = ServerManagedSettingsApi(client)
         self.environments = ServerEnvironmentsApi(client)
         self.host = ServerHostApi(client)
         self.hooks = ServerHooksApi(client)
         self.models = ServerModelsApi(client)
-        self.sandbox = ServerSandboxApi(client)
         self.tools = ServerToolsApi(client)
         self.account = ServerAccountApi(client)
         self.secrets = ServerSecretsApi(client)
@@ -57926,8 +61031,6 @@ class ServerRpc:
         self.plugins = ServerPluginsApi(client)
         self.agents = ServerAgentsApi(client)
         self.commands = ServerCommandsApi(client)
-        self.user = ServerUserApi(client)
-        self.managed_settings = ServerManagedSettingsApi(client)
         self.runtime = ServerRuntimeApi(client)
         self.session_fs = ServerSessionFsApi(client)
         self.llm_inference = ServerLlmInferenceApi(client)
@@ -57943,6 +61046,380 @@ class ServerRpc:
     async def register_extension_launch_provider(self, *, timeout: float | None = None) -> None:
         "Registers the calling SDK client as the per-entrypoint extension launch provider. Call before creating any sessions. When omitted, the runtime uses its built-in extension launcher.\n\n.. warning:: This API is experimental and may change or be removed in future versions."
         await self._client.request("registerExtensionLaunchProvider", {}, **_timeout_kwargs(timeout))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerSandboxProxySecretApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _get_location(self, *, timeout: float | None = None) -> SandboxProxySecretLocation:
+        "Reports where this runtime keeps the sandbox proxy password: the credential store directory and the entry identifier within it. Both are derived from the configuration directory this runtime was started with, so a host does not resolve them itself. Read this to recognize a `${secret:…}` value in stored sandbox settings as this runtime's own proxy password rather than a reference the user wrote by hand. Marked internal because it exists to carry a CLI call site off the napi boundary onto the SDK contract.\n\nReturns:\n    Where this runtime keeps the sandbox proxy password.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return SandboxProxySecretLocation.from_dict(await self._client.request("sandbox.proxySecret.getLocation", {}, **_timeout_kwargs(timeout)))
+
+    async def _get(self, *, timeout: float | None = None) -> SandboxProxySecretGetResult:
+        "Reads the stored sandbox proxy password from the credential store `sandbox.proxySecret.getLocation` names, preferring the OS keychain and falling back to the on-disk store. Reports an absent value rather than failing when no entry exists. Marked internal because it exists to carry a CLI call site off the napi boundary onto the SDK contract.\n\nReturns:\n    The stored sandbox proxy password, if one is present.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return SandboxProxySecretGetResult.from_dict(await self._client.request("sandbox.proxySecret.get", {}, **_timeout_kwargs(timeout)))
+
+    async def _save(self, params: SandboxProxySecretSaveRequest, *, timeout: float | None = None) -> SandboxProxySecretSaveResult:
+        "Stores the sandbox proxy password in the credential store `sandbox.proxySecret.getLocation` names, replacing any existing entry. Reports whether the OS keychain accepted it or it fell back to the on-disk store. Marked internal because it exists to carry a CLI call site off the napi boundary onto the SDK contract.\n\nArgs:\n    params: The sandbox proxy password to store.\n\nReturns:\n    Where the sandbox proxy password was stored.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return SandboxProxySecretSaveResult.from_dict(await self._client.request("sandbox.proxySecret.save", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _delete(self, *, timeout: float | None = None) -> None:
+        "Removes the stored sandbox proxy password from the credential store `sandbox.proxySecret.getLocation` names. Succeeds when no entry exists, so it is safe to call while clearing a proxy password whose origin is unknown. Marked internal because it exists to carry a CLI call site off the napi boundary onto the SDK contract.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        await self._client.request("sandbox.proxySecret.delete", {}, **_timeout_kwargs(timeout))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerSandboxSettingsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _apply_defaults(self, params: SandboxApplyDefaultsRequest, *, timeout: float | None = None) -> dict:
+        "Resolves a stored sandbox settings object into the effective one, filling every value the user left unset with its default. Read this to render or reason about the sandbox configuration a session would actually run under, rather than the sparse document the user wrote.\n\nArgs:\n    params: The stored sandbox settings to resolve against the defaults.\n\nReturns:\n    The effective sandbox settings, with every unset value resolved to its default.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return dict(await self._client.request("sandbox.settings.applyDefaults", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerSandboxApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.proxy_secret = _InternalServerSandboxProxySecretApi(client)
+        self.settings = _InternalServerSandboxSettingsApi(client)
+
+    async def _resolve_floored_config(self, params: _SandboxResolveFlooredConfigParams, *, timeout: float | None = None) -> SandboxResolveFlooredConfigResult:
+        "Raises a user's sandbox settings to an administrator's managed sandbox floor and returns the result a session should actually run under. The floor can only tighten: an enterprise force-on is reflected even when the user's own `enabled` is false, and a user cannot lower a setting the floor raised. The result is normalized through the declared sandbox shape, so a key reorder or an undeclared passthrough key is not mistaken for a policy change by callers that diff two results. A host must call this rather than merge the two layers itself, because reimplementing the direction of the fold is what turns an administrator's floor into a suggestion.\n\nArgs:\n    params: The user's sandbox settings and the managed sandbox floor to raise them to.\n\nReturns:\n    The user's sandbox settings raised to the managed floor.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return SandboxResolveFlooredConfigResult.from_dict(await self._client.request("sandbox.resolveFlooredConfig", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _prepare_picker_policy(self, params: _SandboxPreparePickerPolicyParams, *, timeout: float | None = None) -> _SandboxPreparePickerPolicyResult:
+        "Builds the effective filesystem policy one `@`-file picker checks its suggestions against, so Git discovery and grant canonicalization run once for the picker's lifetime instead of on every debounced keystroke. Returns no policy when the sandbox is absent or disabled, which the paired filter reads as \"keep every candidate\". A host must pair this with `sandbox.filterPickerCandidates` rather than resolve a grant list itself, because the picker's grants are narrower than a file tool's — the same path a built-in tool may read can be one the picker must not offer.\n\nArgs:\n    params: The working directory and sandbox settings to build a file-picker policy from.\n\nReturns:\n    The prepared file-picker policy, or none when the sandbox is disabled.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _SandboxPreparePickerPolicyResult.from_dict(await self._client.request("sandbox.preparePickerPolicy", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _filter_picker_candidates(self, params: _SandboxFilterPickerCandidatesParams, *, timeout: float | None = None) -> _SandboxFilterPickerCandidatesResult:
+        "Checks a batch of `@`-file picker suggestions against a policy prepared by `sandbox.preparePickerPolicy` and returns one allow decision per candidate, positionally aligned with the request. Batched deliberately: each check canonicalizes a path component-by-component through the real filesystem, so one call amortizes that over a single hop rather than dozens while the user types. A directory the policy does not itself allow can still be kept as a waypoint to an allowed subtree. An absent policy keeps every candidate.\n\nArgs:\n    params: A batch of file-picker candidates to check against a prepared policy.\n\nReturns:\n    Per-candidate allow decisions, positionally aligned with the request.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _SandboxFilterPickerCandidatesResult.from_dict(await self._client.request("sandbox.filterPickerCandidates", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _resolve_for_optional(self, params: _SandboxEffectiveForOptionalParams, *, timeout: float | None = None) -> _SandboxEffectiveForOptionalResult:
+        "The sandbox a single named feature actually launches under, which is not the same as the session's sandbox. A feature is routed out of the sandbox by its own flag — `sandboxMcpServers`, `sandboxLspServers` — so an enabled session can still start one server confined and another free. Returns a disabled sandbox rather than an error when the host has no sandbox slice at all, so an absent config and an opted-out feature read alike at the launch site. A host must ask per feature rather than reuse the session config, because reading only `enabled` confines a server the user opted out of, or reports as sandboxed one that is not.\n\nArgs:\n    params: A sandbox config and the per-feature routing flag to resolve it for.\n\nReturns:\n    The sandbox a named feature actually launches under.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _SandboxEffectiveForOptionalResult.from_dict(await self._client.request("sandbox.resolveForOptional", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _check_platform_support(self, *, timeout: float | None = None) -> bool:
+        "Reports whether this machine can run an OS-level command sandbox at all. A host must ask before it offers sandboxing, because the answer is a property of the machine rather than of any setting: on Linux it depends on bubblewrap being installed, and on Windows on the OS build supporting BaseContainer. Probing it requires spawning a process the first time, so the answer is cached for the life of the runtime. A host that assumes support and enables the sandbox anyway produces a session in which every shell command fails.\n\nReturns:\n    True when an OS-level sandbox can run on this host.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return bool(await self._client.request("sandbox.checkPlatformSupport", {}, **_timeout_kwargs(timeout)))
+
+    async def _check_windows_host_loopback_support(self, *, timeout: float | None = None) -> bool:
+        "Reports whether this Windows host's BaseContainer implementation can reach the host's loopback interface directly, which is what a local-network policy needs to avoid routing through the egress proxy. Like `sandbox.checkPlatformSupport`, the answer is a property of the machine's OS build rather than of any setting, and resolving it the first time spawns a platform probe. A host that offers the direct local-network option on a machine that lacks the capability produces a session whose sandboxed commands cannot reach local services. Always false off Windows.\n\nReturns:\n    True when the sandbox on this host can reach host loopback directly.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return bool(await self._client.request("sandbox.checkWindowsHostLoopbackSupport", {}, **_timeout_kwargs(timeout)))
+
+    async def _get_unsupported_message(self, *, timeout: float | None = None) -> str:
+        "The explanation a host shows when it refuses an explicit request to turn the sandbox on for a machine that cannot run one. Carries the platform-specific remedy — install bubblewrap, update Windows — and the documentation link, so a host that got `false` from `sandbox.checkPlatformSupport` does not have to compose its own reason and cannot describe the same machine differently from the runtime's own spawn path.\n\nReturns:\n    The user-facing refusal, including the platform remedy and the documentation link.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return str(await self._client.request("sandbox.getUnsupportedMessage", {}, **_timeout_kwargs(timeout)))
+
+    async def _get_unsupported_setting_disabled_notice(self, *, timeout: float | None = None) -> str:
+        "The notice a host shows when a stored `sandbox` setting is being ignored for this session because the machine cannot enforce it. Distinct from `sandbox.getUnsupportedMessage`, which refuses an explicit request: this one reports that a setting the user already saved is inert, states that commands will run unsandboxed, and confirms the stored setting itself is left alone. A host that stays silent here leaves the user believing a sandbox is active.\n\nReturns:\n    The user-facing notice that a saved sandbox setting is inert for this session.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return str(await self._client.request("sandbox.getUnsupportedSettingDisabledNotice", {}, **_timeout_kwargs(timeout)))
+
+    async def _get_unsupported_startup_notice(self, params: _SandboxUnsupportedStartupNoticeParams, *, timeout: float | None = None) -> _SandboxUnsupportedStartupNoticeResult:
+        "The warning a host prints at startup when a session asked for a sandbox on a machine that cannot run one. The third of the unsupported notices, and the only one that depends on the policy in force: it names the remedy the reader can actually act on, which is the stored setting for an unmanaged host, an administrator for a managed one, and waiting for the policy to resolve when the sandbox stayed on only because the policy could not be determined. Returns no notice when the machine does support a sandbox, so a host can call it unconditionally on the startup path. A host that composes its own warning tells a managed user to change a setting their policy will overwrite.\n\nArgs:\n    params: The managed sandbox policy in force, which selects which remedy the notice offers.\n\nReturns:\n    The startup warning, absent when the machine can run a sandbox.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _SandboxUnsupportedStartupNoticeResult.from_dict(await self._client.request("sandbox.getUnsupportedStartupNotice", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _check_enforcement_command(self, params: _SandboxEnforcementCommandAllowedParams, *, timeout: float | None = None) -> bool:
+        "Whether one slash command stays reachable while sandbox enforcement is unavailable and the session is otherwise blocked. The permitted set is deliberately narrow — commands that only report state, and the few that let the user repair or leave the situation — and it is keyed on the arguments as well as the name, so `/sandbox status` is admitted where `/sandbox enable` is not. A host must ask rather than keep its own list: a command this returns false for is one the runtime would refuse anyway, and a divergent list either strands the user with no way out or admits a command that acts on an unenforced session.\n\nArgs:\n    params: One slash command, as typed, to test against the enforcement-block allowlist.\n\nReturns:\n    True when the command stays available while enforcement is blocked.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return bool(await self._client.request("sandbox.checkEnforcementCommand", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _get_docs_url(self, *, timeout: float | None = None) -> SandboxDocsURLResult:
+        "Returns the documentation URL a host should point a user at when it declines or downgrades a sandbox setting. The runtime owns the address so every surface cites the same page and a host does not hard-code a link that later moves.\n\nReturns:\n    The documentation URL a host cites when it declines or downgrades a sandbox setting.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return SandboxDocsURLResult.from_dict(await self._client.request("sandbox.getDocsUrl", {}, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerPersistenceApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _write_raw_json_locked(self, params: PersistenceWriteRawJSONLockedRequest, *, timeout: float | None = None) -> PersistenceWriteRawJSONLockedResult:
+        "Atomically replaces a JSON file's entire contents while holding the runtime's per-path lock. The lock lives in the runtime process, so a host that writes these files itself takes no part in it and can tear a concurrent runtime write; route the write here instead. Unlike a merging write this never reads or parses the existing file, so a previously corrupted snapshot is replaced wholesale rather than failing every later write. Use it only for callers that always persist a complete snapshot.\n\nArgs:\n    params: A complete JSON snapshot to write under the runtime's per-path file lock.\n\nReturns:\n    The outcome of a locked snapshot write.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return PersistenceWriteRawJSONLockedResult.from_dict(await self._client.request("persistence.writeRawJsonLocked", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerUserSettingsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _set_hook_disabled(self, params: _UserSettingsSetHookDisabledRequest, *, timeout: float | None = None) -> _UserSettingsSetHookDisabledResult:
+        "Adds or removes one hook key in the user `disabledHooks` setting, rewriting settings.json in place and leaving every other setting untouched. Reports a typed outcome rather than failing the call, so a host can tell an unparseable settings file apart from a write that could not complete.\n\nArgs:\n    params: One hook to disable or re-enable.\n\nReturns:\n    Outcome of rewriting the `disabledHooks` setting.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsSetHookDisabledResult.from_dict(await self._client.request("user.settings.setHookDisabled", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _load_for_config_dir(self, params: _UserSettingsLoadForConfigDirRequest, *, timeout: float | None = None) -> dict:
+        "Reads the user's settings document exactly as `user.settings.load` does, but from a caller-supplied configuration directory instead of the one the server resolved for itself. Use this when a consumer scopes a session to its own Copilot home — the SDK's per-session `configDir` override — so the settings read match the directory that session actually uses. An absent or empty `configDir` resolves the server's own home, making this identical to `user.settings.load`. Hook-validation relaxations are deliberately not caller-supplied: they continue to come from the server's environment, so a consumer cannot widen the host's hook policy through this method.\n\nArgs:\n    params: Selects the configuration directory whose user settings to read.\n\nReturns:\n    The stored user settings document, keyed by setting name.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return dict(await self._client.request("user.settings.loadForConfigDir", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _load_repo(self, params: UserSettingsLoadRepoRequest, *, timeout: float | None = None) -> UserSettingsLoadRepoResult:
+        "Reads a repository's checked-in settings document as stored, normalized, together with any diagnostic raised while reading it. This is the repository half of the layering `user.settings.get` reports: `user.settings.load` reads the user's own document, and this reads the one a repository checks in to govern the keys `user.settings.governanceKeys` lists as repo-governable. A document that fails to parse, or that sets a key a repository may not govern, is reported through `warning` while the settings that did load are still returned, so a consumer surfaces the diagnostic and continues rather than failing the session. When `repoRoot` is the user's home directory the Claude-compatible configuration is skipped, so a home-directory session does not inherit a personal config as repository policy.\n\nArgs:\n    params: Selects the repository whose checked-in settings to read.\n\nReturns:\n    A repository's settings as stored, together with any diagnostic raised while reading them.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsLoadRepoResult.from_dict(await self._client.request("user.settings.loadRepo", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _load_and_merge_repo(self, params: _UserSettingsLoadAndMergeRepoRequest, *, timeout: float | None = None) -> _UserSettingsLoadAndMergeRepoResult:
+        "Reads a repository's settings and merges them over a supplied user layer in one step, returning the settings a consumer should act on inside that repository. Use this rather than reading the two layers separately: the merge is per setting and collection-aware, so a repository adds to the collections it is allowed to influence without replacing the user's own entries, and a whole-document overlay would get that wrong. Any diagnostic raised while reading the repository layer is returned rather than printed, so the consumer decides how to surface it; the settings that did load are merged regardless.\n\nArgs:\n    params: A repository to read settings from, and the user layer they are merged over.\n\nReturns:\n    The settings a consumer should act on inside a repository, together with any diagnostic raised while reading the repository layer.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsLoadAndMergeRepoResult.from_dict(await self._client.request("user.settings.loadAndMergeRepo", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _get_path(self, *, timeout: float | None = None) -> UserSettingsPathResult:
+        "Reports the on-disk path of the settings document `user.settings.load` and `user.settings.set` read and write. Resolved the same way those methods resolve it, so a host that shows or opens the settings file names the file the runtime actually uses, including the extensionless legacy `settings` file when that is what is present.\n\nReturns:\n    The on-disk location of the user's settings document.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return UserSettingsPathResult.from_dict(await self._client.request("user.settings.getPath", {}, **_timeout_kwargs(timeout)))
+
+    async def _load_with_warning(self, *, timeout: float | None = None) -> UserSettingsLoadWithWarningResult:
+        "Reads the user's stored settings together with the diagnostic raised while reading them. This is `user.settings.load` plus the reason part of the document was ignored: that one answers the document alone, so a caller cannot tell a clean read from a salvaged one. Read this when the caller is about to write the file back, where accepting a partial parse would discard every value the loader could not read. The settings that did load are still reported alongside the warning, so a consumer may surface it and continue instead of failing.\n\nReturns:\n    The user's stored settings, together with any diagnostic raised while reading them.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return UserSettingsLoadWithWarningResult.from_dict(await self._client.request("user.settings.loadWithWarning", {}, **_timeout_kwargs(timeout)))
+
+    async def _merge_managed_and_user(self, params: _UserSettingsMergeManagedAndUserParams, *, timeout: float | None = None) -> UserSettingsMergeManagedAndUserResult:
+        "Folds a user settings layer over a managed (enterprise policy) layer and returns the merged settings. The managed layer's governance keys win, `autoTier` resolves through its overridable form, and the two per-entry control maps (`enabledPlugins`, `extraKnownMarketplaces`) union across the layers and are then stamped back from the managed layer, so each entry an administrator declares wins while the user keeps control of the rest. The parameters are named for their layers rather than being a generic base/override pair: nothing about a settings object identifies which layer produced it, so the runtime cannot detect a transposed call, and transposing one resolves the governance keys in the user's favour instead of the administrator's. Supplying only one layer returns it unchanged, and supplying neither returns an empty object. Rejects a managed `autoTier` that is neither a user-configurable tier nor a single-key overridable form, rather than silently dropping it.\n\nArgs:\n    params: The managed (enterprise policy) layer and the user layer to fold together. The field names carry the layer identity: nothing about a settings object identifies which layer produced it, so a generic base/override pair would let a caller transpose them and silently resolve the governance keys in the user's favour.\n\nReturns:\n    The user layer folded over the managed layer.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsMergeManagedAndUserResult.from_dict(await self._client.request("user.settings.mergeManagedAndUser", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _merge_repo_value(self, params: _UserSettingsMergeRepoValueParams, *, timeout: float | None = None) -> UserSettingsMergeRepoValueResult:
+        "Folds a repository's settings layer into the user layer. Each repo-overridable key carries a directional policy chosen so a repository can only add restrictions and never relax the user's own. The two per-entry managed control maps are the exception those directional rules cannot express — a repository may legitimately enable plugins and declare marketplaces — so they are re-stamped afterwards from the runtime's ambient managed policy. That makes the result depend on the runtime process's managed state and not on the arguments alone: a host must call this rather than reimplement the fold, or a repository could relax a restriction the administrator imposed. Rejects when either layer is not a JSON object.\n\nArgs:\n    params: The user layer and the repository layer to fold together.\n\nReturns:\n    The repository layer folded into the user layer.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsMergeRepoValueResult.from_dict(await self._client.request("user.settings.mergeRepoValue", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _migrate_staff_update_channel_once(self, params: UserSettingsHostContext, *, timeout: float | None = None) -> _UserSettingsMigrateStaffUpdateChannelOnceResult:
+        "Runs the one-time migration that moves a staff account's update channel to stable, and records that it ran. Idempotent and self-gating: it takes a lock over the global-state file, re-reads the completion stamp inside it, and returns `current` rather than migrating twice, so two hosts racing at startup cannot both migrate. Only a `migrated` status means the persisted settings changed and the caller should reload them. An account on the experimental channel is deliberately left alone and reported as `excluded-experimental`.\n\nArgs:\n    params: The filesystem and environment facts a user-settings file is resolved from. Passed explicitly rather than read from the runtime's own process, so a host whose configuration directory differs from its process environment resolves the file it means.\n\nReturns:\n    The outcome of the one-time staff update-channel migration.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsMigrateStaffUpdateChannelOnceResult.from_dict(await self._client.request("user.settings.migrateStaffUpdateChannelOnce", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _reset_staff_model_selection_once(self, params: _UserSettingsResetStaffModelSelectionOnceRequest, *, timeout: float | None = None) -> _UserSettingsResetStaffModelSelectionOnceResult:
+        "Runs the one-time reset that clears a staff account's pinned model selection, and reports the timestamp the host should record. Idempotent and self-gating: the reset is gated on a fixed cutoff, so a caller that passes back the timestamp it recorded gets `didReset: false` rather than a second reset. It applies to staff accounts only; any other account is reported as not reset without the settings document being opened. Only `didReset: true` means the persisted settings changed, and only then are the updated settings returned for the host to adopt.\n\nArgs:\n    params: Selects the configuration directory to run the one-time staff model-selection reset against, and supplies the caller's record of whether it has already run.\n\nReturns:\n    The outcome of the one-time staff model-selection reset.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsResetStaffModelSelectionOnceResult.from_dict(await self._client.request("user.settings.resetStaffModelSelectionOnce", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _get_unknown_keys_warning(self, params: _UserSettingsUnknownKeysWarningRequest, *, timeout: float | None = None) -> _UserSettingsUnknownKeysWarningResult:
+        "Reports the top-level keys in the user settings document that the runtime does not recognize, phrased for display to the user. This is a separate question from the warning `user.settings.loadWithWarning` returns: that one describes parts of the document the loader had to ignore to load the rest, whereas an unknown key parses cleanly and is simply not a setting, so a host that surfaces only the load warning silently accepts a misspelled key that will never take effect. Nothing is reported when the document is absent, unreadable, or failed to load, because an unknown-key list derived from a document the runtime could not read would be misleading rather than helpful. Inspection never modifies the document.\n\nArgs:\n    params: Selects the configuration directory whose user settings document should be inspected for unrecognized top-level keys.\n\nReturns:\n    The unrecognized top-level keys found in the user settings document, already phrased for display.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsUnknownKeysWarningResult.from_dict(await self._client.request("user.settings.getUnknownKeysWarning", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _build_runtime(self, params: _UserSettingsBuildRuntimeRequest, *, timeout: float | None = None) -> dict:
+        "Resolves the effective runtime settings for a host that is about to start a session, layering the given overrides over the settings documents, the environment and the platform defaults. A host cannot assemble this itself: the precedence between a user document, a repository document, the managed layers and the environment is the runtime's own rule, and a host that re-implements it drifts from the server it is configuring. The working directory, environment and platform are taken as arguments rather than read from the server process, so a host resolving settings for a directory other than its own gets that directory's answer. Nothing is written; this only computes.\n\nArgs:\n    params: The overrides and host context to resolve effective runtime settings from.\n\nReturns:\n    The effective runtime settings, keyed by setting name. Keys this runtime does not recognize are preserved rather than dropped, so a caller reading a document written by a newer runtime keeps every value.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return dict(await self._client.request("user.settings.buildRuntime", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _migrate_staff_log_level_once(self, params: _UserSettingsMigrateStaffLogLevelOnceRequest, *, timeout: float | None = None) -> _UserSettingsMigrateStaffLogLevelOnceResult:
+        "Runs the one-time migration that moves a staff account's log level to the current default, and records that it ran. Idempotent and self-gating: it takes a lock over the global-state file and re-reads the completion stamp inside it, so two hosts racing at startup cannot both migrate. Only `refreshed` can have changed the persisted settings, and the settings it returns are the document re-read after the write, so a host should adopt them rather than reloading separately and racing the next writer.\n\nArgs:\n    params: Selects the configuration directory to run the one-time staff log-level migration against, and supplies the caller's record of whether it has already run.\n\nReturns:\n    The outcome of the one-time staff log-level migration.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsMigrateStaffLogLevelOnceResult.from_dict(await self._client.request("user.settings.migrateStaffLogLevelOnce", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _migrate_obsolete_on_disk(self, params: _UserSettingsMigrateObsoleteOnDiskRequest, *, timeout: float | None = None) -> _UserSettingsMigrateObsoleteOnDiskResult:
+        "Runs the one-time cleanup that removes obsolete CLI-owned settings and legacy rubber-duck keys from the user's settings document, and reports what it did. Idempotent and safe to call on every startup: with nothing obsolete left it reports `unchanged` and writes nothing. The cleanup preserves every key it does not recognize, so a setting written by a newer host is never dropped by an older one, and a document that fails to parse is reported `invalid` and left untouched rather than rewritten from a partial read. The cleaned document is not returned: it is written before this replies, so `user.settings.load` reads it authoritatively. A host that surfaces unrecognized keys through `user.settings.unknownKeys` wants this first, because the keys this retires would otherwise be shown to the user as if they were misspelled settings.\n\nArgs:\n    params: Selects the configuration directory whose settings document to clean.\n\nReturns:\n    The outcome of the one-time obsolete-settings cleanup.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsMigrateObsoleteOnDiskResult.from_dict(await self._client.request("user.settings.migrateObsoleteOnDisk", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _get_paths(self, params: UserSettingsGetPathsRequest, *, timeout: float | None = None) -> UserSettingsGetPathsResult:
+        "Resolves the on-disk locations of the settings files this runtime reads, so a consumer can show or open them. The user path is the same file `user.settings.get`, `user.settings.load`, and `user.settings.set` operate on. Supply `repoRoot` to also resolve that repository's checked-in and local settings paths. A path is reported whether or not the file exists.\n\nArgs:\n    params: Selects which settings file paths to resolve.\n\nReturns:\n    On-disk locations of the settings files this runtime reads. A path is reported whether or not the file exists.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsGetPathsResult.from_dict(await self._client.request("user.settings.getPaths", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _list_governance_keys(self, *, timeout: float | None = None) -> UserSettingsGovernanceKeysResult:
+        "Lists the top-level user-setting keys by who is allowed to govern them: `repo` keys a repository may override through `.github/copilot/settings.json`, `claudeRepo` keys a repository may override through a Claude-compatible config, and `managed` keys an enterprise policy may fix. The lists are static for a given runtime build and fail closed: a key absent from a list cannot be governed that way.\n\nReturns:\n    Top-level user-setting keys grouped by who may govern them.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return UserSettingsGovernanceKeysResult.from_dict(await self._client.request("user.settings.listGovernanceKeys", {}, **_timeout_kwargs(timeout)))
+
+    async def _edit(self, params: _UserSettingsEditRequest, *, timeout: float | None = None) -> _SettingsEditResult:
+        "Atomically edits one canonical user setting inside its settings-file lock. Reads, canonicalizes touched aliases, applies the edit, validates the resulting top-level setting and writes before releasing the lock. An explicit autoUpdatesChannel set completes the staff migration in the same transaction. Only a malformed existing file returns `invalid`; refused keys, invalid values and I/O errors reject the call.\n\nArgs:\n    params: One atomic edit of a canonical setting in settings.json.\n\nReturns:\n    Outcome of an atomic user or repository settings edit.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = params.to_dict()
+        return _SettingsEditResult.from_dict(await self._client.request("user.settings.edit", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _normalize(self, params: UserSettingsNormalizeRequest, *, timeout: float | None = None) -> UserSettingsNormalizeResult:
+        "Rewrites legacy and snake_case setting names in a settings object to their canonical spelling. A caller editing settings.json must normalize before writing: a legacy key left in place survives the write, is re-normalized on the next load, and silently shadows the canonical value the write just stored.\n\nArgs:\n    params: Settings object whose key names should be canonicalized.\n\nReturns:\n    Settings object with canonical key names.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsNormalizeResult.from_dict(await self._client.request("user.settings.normalize", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _diagnose_problems(self, params: UserSettingsProblemsRequest, *, timeout: float | None = None) -> UserSettingsProblemsResult:
+        "Diagnoses a set of already-loaded settings layers, reporting each key that will not take effect and why. Settings load tolerantly so that one bad key does not stop a session from starting; this method surfaces what was dropped so a caller can report it instead of silently ignoring the user's intent. Takes the layers as given rather than reading them, so a caller can diagnose exactly the content it is showing, including unsaved edits. Never echoes a setting's value, because a value may be a token or another secret. Marked internal because it exists to carry a CLI call site off the native addon, not to serve a consumer-facing need; it becomes public once an SDK consumer needs to inspect settings health itself.\n\nArgs:\n    params: The settings layers to diagnose.\n\nReturns:\n    The settings that will not take effect across the given layers.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsProblemsResult.from_dict(await self._client.request("user.settings.diagnoseProblems", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _apply_top_key(self, params: UserSettingsApplyTopKeyRequest, *, timeout: float | None = None) -> UserSettingsApplyTopKeyResult:
+        "Validates one top-level setting subtree and writes just that key to settings.json as a single step. Doing both here closes the race a caller cannot close itself: between a separate preflight read and the write, the file may change. Rewriting only the touched key keeps legacy siblings out of settings.json. Answers a status rather than failing, so a validation problem and a write problem stay distinguishable.\n\nArgs:\n    params: A single top-level setting subtree to validate and write.\n\nReturns:\n    Outcome of validating and writing one top-level setting subtree.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = params.to_dict()
+        return UserSettingsApplyTopKeyResult.from_dict(await self._client.request("user.settings.applyTopKey", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _write_all(self, params: UserSettingsWriteAllRequest, *, timeout: float | None = None) -> None:
+        "Replaces the user settings file's entire content in one write. A key absent from `settings` is removed, which is what distinguishes this from `user.settings.set`: that one merges, so it can never clear a key the caller has dropped. For a caller saving the result of a raw edit, a merge would silently resurrect every key the user deleted. Records the same one-time mutation marks a per-key write records, so a setting the user has now chosen explicitly stops being migrated for them.\n\nArgs:\n    params: The whole content to store in the user settings file.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        await self._client.request("user.settings.writeAll", params_dict, **_timeout_kwargs(timeout))
+
+    async def _update(self, params: _UserSettingsUpdateRequest, *, timeout: float | None = None) -> _UserSettingsUpdateResult:
+        "Merges a partial object into one top-level user setting, re-reading the stored value inside this runtime process's settings.json write lock so that concurrent writers in this process to different sub-fields of the same key do not clobber each other. Unlike `user.settings.set`, which replaces a key's whole value with what the caller last read, this keeps sub-fields the caller did not name when both the stored value and supplied value are objects; otherwise the supplied value replaces the stored value. Use it whenever two independent surfaces own different sub-fields of one setting. Returns the key's stored value after the write, in `value`.\n\nArgs:\n    params: Names the user setting to merge into, and the partial object to merge.\n\nReturns:\n    The stored value of the user setting after the merge.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _UserSettingsUpdateResult.from_dict(await self._client.request("user.settings.update", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _load_for_edit(self, *, timeout: float | None = None) -> UserSettingsLoadForEditResult:
+        "Reads settings.json as stored for a caller that is about to edit it. Unlike `user.settings.get`, this returns file values rather than per-key metadata and defaults. Reports `missing` for an absent file and `invalid` when the existing file will not parse. Retired config.json and extensionless files are not read.\n\nReturns:\n    Contents of settings.json as stored, for a caller about to rewrite it.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return UserSettingsLoadForEditResult.from_dict(await self._client.request("user.settings.loadForEdit", {}, **_timeout_kwargs(timeout)))
+
+    async def _validate(self, params: UserSettingsValidateRequest, *, timeout: float | None = None) -> UserSettingsValidateResult:
+        "Validates one top-level setting subtree without writing it, reporting each problem with the path it applies to. Scoped to a single top-level key on purpose: validating the whole file would reject an edit whenever an unrelated pre-existing field is malformed, locking the user out of the very tool that could fix it.\n\nArgs:\n    params: A single top-level setting subtree to validate.\n\nReturns:\n    Outcome of validating one top-level setting subtree.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return UserSettingsValidateResult.from_dict(await self._client.request("user.settings.validate", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerUserApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.settings = _InternalServerUserSettingsApi(client)
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerRepoSettingsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _edit(self, params: _RepoSettingsEditRequest, *, timeout: float | None = None) -> _SettingsEditResult:
+        "Atomically edits one allowed top-level repository setting. Reads the raw file, preserves unrelated keys, applies one scalar or list edit, validates the result and writes under one file lock, so concurrent sibling or list edits are not lost. A malformed or unsafe existing file returns `invalid` without a write; rejected keys, invalid values and I/O errors reject the call.\n\nArgs:\n    params: One atomic edit of an allowed top-level repository setting.\n\nReturns:\n    Outcome of an atomic user or repository settings edit.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _SettingsEditResult.from_dict(await self._client.request("repo.settings.edit", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _read_raw(self, params: _RepoSettingsReadRawRequest, *, timeout: float | None = None) -> _RepoSettingsReadRawResult:
+        "Reads one repository settings file without settings normalization or layering. The existing JSONC parser accepts comments and trailing commas and applies its prototype-safety rules. Missing or blank files return an empty valid config. Invalid files return an empty config with invalid=true; other read failures reject.\n\nArgs:\n    params: Which repository settings file to read.\n\nReturns:\n    Parsed repository settings without normalization or layering.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _RepoSettingsReadRawResult.from_dict(await self._client.request("repo.settings.readRaw", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _write_key(self, params: _RepoSettingsWriteKeyRequest, *, timeout: float | None = None) -> None:
+        "Writes or removes one allowed top-level repository setting through the existing validator and file lock. Preserves unrelated stored keys. Invalid keys, values, existing documents, and I/O errors reject without replacing the file. Deletion requires delete=true; otherwise value must be present.\n\nArgs:\n    params: One key to write or remove in a repository settings file.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = params.to_dict()
+        await self._client.request("repo.settings.writeKey", params_dict, **_timeout_kwargs(timeout))
+
+    async def _write_all(self, params: _RepoSettingsWriteAllRequest, *, timeout: float | None = None) -> None:
+        "Replaces the repository-overridable settings in one locked write. Allowed keys present in settings are validated and written; allowed keys absent from settings are removed. Other input keys are ignored, and unknown keys already stored in the file remain unchanged. Invalid values or an invalid existing file reject without a partial write.\n\nArgs:\n    params: The complete set of repository-overridable settings to store.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        await self._client.request("repo.settings.writeAll", params_dict, **_timeout_kwargs(timeout))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerRepoApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.settings = _InternalServerRepoSettingsApi(client)
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerFeatureFlagsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _resolve_startup_gates(self, params: _FeatureFlagsResolveStartupGatesRequest, *, timeout: float | None = None) -> dict:
+        "Resolves named gates against this installation's cached online-experiment assignment, for the account the runtime is already authenticated as. Unlike `featureFlags.resolve`, which layers static availability with the populations supplied, this reads the experiment assignment the runtime cached for its own current authentication, so a launch can honor a rollout before any session exists. The account is never taken from the request: naming one would read another account's cached assignments. The cached assignment answers immediately and any network refresh happens behind it, so this call does not wait on the network. Not available to an extension, which cannot carry the user's consent to read their assignment.\n\nArgs:\n    params: Caller population and startup inputs to resolve named online-experiment gates for. Carries no account: the runtime resolves the assignment for the authentication it already holds.\n\nReturns:\n    The resolved gates, keyed by flag name.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return dict(await self._client.request("featureFlags.resolveStartupGates", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _list_metadata(self, *, timeout: float | None = None) -> _FeatureFlagsMetadataResult:
+        "Lists every feature flag this runtime declares, with the population each one is declared for, its experimental description, and the online-experiment flag it maps to. This is the static catalog: it describes how each flag is defined, not whether it is on for anyone. Use `featureFlags.resolve` for static values with caller overrides, not active runtime values or experiment assignments.\n\nReturns:\n    Every feature flag this runtime declares, with the shape each one was declared with.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return _FeatureFlagsMetadataResult.from_dict(await self._client.request("featureFlags.listMetadata", {}, **_timeout_kwargs(timeout)))
+
+    async def _resolve(self, params: _FeatureFlagsResolveRequest, *, timeout: float | None = None) -> dict:
+        "Computes static feature flags from the supplied population and overrides without changing runtime state or verifying audience membership. Starts from declared availability, then applies direct feature-flag environment values, user settings, and explicit `flagOverrides`. It does not apply `COPILOT_EXP_*` experiment assignments, authenticated startup gates, or active runtime state. Settings include `enabledFeatureFlags`, the legacy `feature_flags.enabled` list, and supported convenience settings. Supply `baseFlags` to use an existing flag set instead of declared availability. Omit `isStaffGitHub` or `isStaffMicrosoft` when membership was never recorded: a legacy staff account then counts as both populations.\n\nArgs:\n    params: Caller population and overrides for static feature-flag resolution, independent of experiment assignments and active runtime state.\n\nReturns:\n    The resolved feature flags, keyed by flag name.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return dict(await self._client.request("featureFlags.resolve", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerPermissionsLocationsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _cleanup_orphaned(self, *, timeout: float | None = None) -> _LocationPermissionsCleanupResult:
+        "Drops stored per-location permission grants whose directory no longer exists, and reports which location keys were removed. Runs against the permission store under the runtime's own Copilot home, the same store `session.permissions.locations.resolve` reads. Marked internal because it exists to carry a CLI call site off the napi boundary onto the SDK contract; it is migration plumbing, not a surface consumers are meant to depend on. It can become public once an SDK consumer needs to prune its own permission store.\n\nReturns:\n    Which stored location permissions were dropped because their directory is gone.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return _LocationPermissionsCleanupResult.from_dict(await self._client.request("permissions.locations.cleanupOrphaned", {}, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerPermissionsFolderTrustApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _check_trust(self, params: _FolderTrustIsTrustedParams, *, timeout: float | None = None) -> FolderTrustCheckResult:
+        "Reports whether a folder is trusted, reading the persisted trusted-folders list directly rather than through a session. Use this from a host that has no session yet, such as a one-shot command deciding whether to honor a checkout's own settings. It differs from the session-scoped check in two ways that matter: it takes the configuration directory to read the list from, instead of inheriting the session's, and it answers only from the persisted list, so trust a user granted for the lifetime of one session is not visible here. A host that has a session should prefer the session-scoped check, which also covers session-only trust.\n\nArgs:\n    params: A folder to check against a persisted trusted-folders list, and the configuration directory holding that list.\n\nReturns:\n    Folder trust check result.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return FolderTrustCheckResult.from_dict(await self._client.request("permissions.folderTrust.checkTrust", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerPermissionsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+        self.locations = _InternalServerPermissionsLocationsApi(client)
+        self.folder_trust = _InternalServerPermissionsFolderTrustApi(client)
+
+    async def _evaluate_managed_policy(self, params: _PermissionsEvaluateManagedPolicyParams, *, timeout: float | None = None) -> PermissionsEvaluateManagedPolicyResult:
+        "Interprets a verbatim managed `permissions` slice into the three policy questions a host asks before granting elevated permissions: whether bypass-permissions mode is forbidden, whether a policy exists that this build could not determine, and whether the layer supplies permission rules the session must enforce. An absent or empty slice means no managed policy applies. The runtime and its permission service share one policy type, so a new managed permission setting is interpreted in exactly one place; a host that reimplements the reading would silently diverge the first time that set grows. Hosts must fail closed on an undetermined policy rather than treating it as permission granted.\n\nArgs:\n    params: The verbatim managed `permissions` slice to interpret.\n\nReturns:\n    The policy questions a host asks before granting elevated permissions.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return PermissionsEvaluateManagedPolicyResult.from_dict(await self._client.request("permissions.evaluateManagedPolicy", params_dict, **_timeout_kwargs(timeout)))
+
+
+# Experimental: this API group is experimental and may change or be removed.
+class _InternalServerManagedSettingsApi:
+    def __init__(self, client: "JsonRpcClient"):
+        self._client = client
+
+    async def _read_device(self, *, timeout: float | None = None) -> _ManagedSettingsReadDeviceResult:
+        "Discovers device-managed settings the way the runtime's own device layer does, and reports the sandbox floor and the load outcome alongside the validated document. This differs from `managedSettings.read` in three ways a policy-enforcing host depends on: a document that validates to an empty object is reported as absent rather than as an empty policy, a discovery error does not suppress a document that still validates, and a failure is reported as a flag rather than only as error text. Hosts that compose the device layer into an effective policy use this, because `managedSettings.read` cannot distinguish \"no device policy\" from \"device policy could not be read\" and would silently hand the user's own layer the win.\n\nReturns:\n    The device-managed settings layer, with the sandbox floor and the load outcome a host needs to compose it into an effective policy.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        return _ManagedSettingsReadDeviceResult.from_dict(await self._client.request("managedSettings.readDevice", {}, **_timeout_kwargs(timeout)))
+
+    async def _retain_policy(self, params: _ManagedSettingsRetainPolicyParams, *, timeout: float | None = None) -> None:
+        "Retains the supplied managed layers as this runtime process's startup policy and re-applies the result to every live session. Hosts that own their own short-lived process policy use this, so a guarded mutation is checked against the policy the host actually fetched. Retaining is a whole-process replacement rather than a merge, so a host that already resolved a good policy must not retain a partial one over it. The failure flags are honest inputs rather than assumptions: reporting a fetch or load that failed keeps the layers already retained, and the interim fail-closed state, instead of clearing them.\n\nArgs:\n    params: The managed layers to retain as this process's startup policy, with the outcome of fetching each one.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        await self._client.request("managedSettings.retainPolicy", params_dict, **_timeout_kwargs(timeout))
+
+    async def _apply_controls(self, params: _ManagedSettingsApplyControlsParams, *, timeout: float | None = None) -> _ManagedSettingsApplyControlsResult:
+        "Stamps an effective managed policy's individually-controlled entries onto a user settings document, returning the settings a host should actually act on. The managed layer wins on every plugin spec and marketplace name it names, and leaves everything it does not name as the user wrote it. Hosts use this rather than merging the two documents themselves, because the merge is per entry rather than per document and a whole-document overlay would either discard the user's unmanaged entries or let a user entry outrank a managed one. Omitting the managed layer returns the settings unchanged, which is what an unmanaged host wants. Rejects when either document is present but is not a JSON object rather than treating it as absent, since silently dropping a malformed policy hands the user's layer the win on exactly the entries the policy exists to control.\n\nArgs:\n    params: A user settings document and the effective managed policy whose controlled entries should be stamped onto it.\n\nReturns:\n    The user settings with the managed layer's controlled entries stamped on.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsApplyControlsResult.from_dict(await self._client.request("managedSettings.applyControls", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _parse_client_value(self, params: _ManagedSettingsParseClientValueParams, *, timeout: float | None = None) -> _ManagedSettingsParseClientValueResult:
+        "Validates the managed settings a client is supplying for a session it is about to open, and returns them reduced to the keys a client is allowed to set. A client-supplied policy is not the same thing as an administrator's: it may only narrow permissions, so this accepts `permissions` and rejects every other key outright rather than ignoring it. Rejecting is the point — a host that silently dropped an unsupported key would report a policy as applied while running without it. Hosts call this before opening the session rather than letting the open fail, so a malformed policy is reported against the request that carried it. The runtime applies the same rule again when the session starts, so this cannot be used to smuggle a wider document past it. An accepted document that sets nothing comes back as an empty object, which is distinct from supplying nothing at all.\n\nArgs:\n    params: The client-supplied managed settings to validate and normalize. Omitting them is valid and yields no policy.\n\nReturns:\n    The accepted managed settings, reduced to the keys a client is allowed to set.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsParseClientValueResult.from_dict(await self._client.request("managedSettings.parseClientValue", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _resolve_effective_value(self, params: _ManagedSettingsResolveEffectiveValueParams, *, timeout: float | None = None) -> _ManagedSettingsResolveEffectiveValueResult:
+        "Composes the supplied server, device/MDM, device sandbox floor and policy-helper layers into the single effective managed policy a host should enforce, resolving each key across the layers by the runtime's own precedence rules. Hosts that assemble managed layers themselves use this so their precedence matches the runtime's exactly instead of reimplementing it. The composition is not a pure function of its inputs: an advisory sandbox force-on that arrived over the server channel is declined when this host cannot run a sandbox, so the result reflects the runtime host's capabilities, and the returned settings carry `sandboxAdvisoryFloorDeclined: true` when that happened. Enforced channels (device/MDM and policy helper) are never declined, and a server force-on carrying `failIfUnavailable` is preserved so the session fails loudly instead of quietly running unsandboxed. Rejects when a supplied layer is present but is not a JSON object, rather than treating it as unmanaged, because silently dropping a malformed policy would hand the user's own layer the win on exactly the keys the policy exists to control.\n\nArgs:\n    params: The managed-settings layers to compose into an effective policy. Every layer is optional; omitting all of them yields no effective policy.\n\nReturns:\n    The effective managed policy composed from the supplied layers.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsResolveEffectiveValueResult.from_dict(await self._client.request("managedSettings.resolveEffectiveValue", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _resolve_bypass_disable_transition(self, params: _ManagedSettingsResolveBypassDisableTransitionParams, *, timeout: float | None = None) -> _ManagedSettingsResolveBypassDisableTransitionResult:
+        "Decides what a host must do to its bypass-permissions state after a managed-policy resolution lands, given the state already in force and the account now signed in. A host holds two pieces of state — which layer disabled bypass mode, and for a server-delivered disable, the account it was pinned to — and cannot decide the next step from the new policy alone. Three rules make that so, and each one is a control rather than a preference. A device/MDM disable outranks the account, so a later server answer never lifts it. An unknown policy, which is what a failed fetch or a refusal this build cannot enforce yields, preserves whatever is in force instead of reverting to permissive. And a server disable is lifted only when the account it was pinned to is no longer the signed-in one, which is what makes signing in to an unrestricted account recover without a restart while a reconnect on the same restricted account does not. Hosts call this rather than reimplementing it because getting the pinning backwards either strands a disable on an account that never carried one or drops one that still applies. `setDisabledState` is omitted when the host must leave its stored flag untouched, which is distinct from being told to set it to false.\n\nArgs:\n    params: The bypass-permissions state a host holds today, the account now signed in, and what the managed-policy resolution said.\n\nReturns:\n    The bypass-permissions state a host should hold after the resolution, and what it must do to get there.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsResolveBypassDisableTransitionResult.from_dict(await self._client.request("managedSettings.resolveBypassDisableTransition", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _ingest(self, params: _ManagedSettingsIngestParams, *, timeout: float | None = None) -> _ManagedSettingsIngestResult:
+        "Resolves managed (enterprise policy) settings for a host from every layer at once: the account's server-delivered policy, the device/MDM layer, and a platform policy helper. Hosts use this instead of fetching and composing the layers themselves, because the per-layer precedence and the fail-closed rules that apply when a layer cannot be confirmed are the runtime's own and must match the policy a session will later enforce. It does not retain or apply anything to process-global policy state, so a host may call it before any session exists — which is the point, since plugin activation and one-shot commands resolve policy before a session is available to carry it. The returned per-layer outcome flags are load-bearing rather than diagnostic: a host must distinguish an unmanaged device from a managed device whose policy could not be confirmed, and apply its fail-closed gates in the second case. Reports its diagnostics in `logMessages` rather than logging them, so a host that runs before a log sink exists still sees them.\n\nArgs:\n    params: Inputs describing the host and account an ingestion should resolve managed policy for.\n\nReturns:\n    The managed policy layers an ingestion resolved, together with the per-layer outcome flags a host needs to decide how much to trust the result. The flags are reported rather than folded into the settings because a host must be able to distinguish an unmanaged device from a managed device whose policy could not be confirmed, and apply its fail-closed gates in the second case.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsIngestResult.from_dict(await self._client.request("managedSettings.ingest", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _resolve_startup_policy(self, params: _ManagedSettingsResolveStartupPolicyParams, *, timeout: float | None = None) -> _ManagedSettingsResolveStartupPolicyResult:
+        "Resolves the managed (enterprise policy) settings a host must enforce from startup, and judges the account against the enterprise sign-in pin in the same pass. This composes the layers the way `managedSettings.ingest` does and then answers the two questions a host cannot answer for itself: which fail-closed floors apply when a layer could not be confirmed, and whether this credential is allowed to sign in at all. The sign-in verdict is the reason a host must not assemble this itself from `managedSettings.ingest` — a pinned organization is an access control, and a host that composed the layers but skipped the pin would let a developer sign in with a personal or another enterprise's account and escape every control that keys off the signed-in identity. The verdict is computed on every resolution, including one that is not retained, so declining to apply policy never widens access. Set `retainAndApply` to keep the resolved policy as this runtime process's startup policy; leave it false to resolve without side effects.\n\nArgs:\n    params: Inputs describing the host and account a startup policy resolution should run for. Mirrors `managedSettings.ingest`, and adds the decision of whether the resolved policy is retained for this runtime process.\n\nReturns:\n    The startup policy a resolution composed, the per-layer outcome flags a host needs to decide how much to trust it, and the enterprise sign-in verdict for the credential it ran against. The flags are reported rather than folded into the settings because a host must distinguish an unmanaged device from a managed device whose policy could not be confirmed, and apply its fail-closed gates in the second case.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsResolveStartupPolicyResult.from_dict(await self._client.request("managedSettings.resolveStartupPolicy", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _load_remote_control(self, params: _ManagedSettingsLoadRemoteControlParams, *, timeout: float | None = None) -> _ManagedSettingsLoadRemoteControlResult:
+        "Resolves the managed `remoteControl` policy for an account on its own, for a host deciding whether a remote-control session may start. Composes the same layers as `managedSettings.ingest` and returns only that one key, so a host does not have to know which layer won. An absent policy means the account is unmanaged for this capability and the host may proceed; that default is safe only while absence really does mean \"no policy\", so a service refusal that says an account policy exists which this client is too old to enforce resolves to an explicit disabled policy instead of to absence. A resolution that cannot be completed is rejected rather than answered as absence, for the same reason.\n\nArgs:\n    params: Inputs describing the host and account whose managed remote-control policy should be resolved. Mirrors `managedSettings.ingest`, and deliberately carries no retention decision: reading this gate never becomes this runtime process's startup policy.\n\nReturns:\n    The managed remote-control policy in force for an account, if any. An absent policy means the account is unmanaged for this capability, which a host reads as allowed — so absence here is a positive statement that no policy applies, never a stand-in for a resolution that failed. A resolution that cannot be completed is rejected instead.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ManagedSettingsLoadRemoteControlResult.from_dict(await self._client.request("managedSettings.loadRemoteControl", params_dict, **_timeout_kwargs(timeout)))
+
+    async def _resolve_device_force_login_orgs_gate(self, params: _ManagedSettingsResolveDeviceForceLoginOrgsGateParams, *, timeout: float | None = None) -> _ForceLoginOrgsDecision:
+        "Evaluates the device-channel enterprise sign-in pin (MDM plist, registry, or managed-settings file) against a credential, without resolving any server-delivered policy. This is the gate an entry point runs before it branches, and the only one that can refuse a developer's first sign-in: it is local, needs no credential, and a server-delivered pin only ever reaches accounts already inside the organization. It fails closed by construction — a discovery that cannot determine whether a pin exists refuses rather than allows, because a control that fails open under a triggerable condition is not a control. Hosts that also want the server channel should call `managedSettings.resolveStartupPolicy`, which folds both channels into one verdict.\n\nArgs:\n    params: The credential and environment to evaluate the device-channel sign-in pin against.\n\nReturns:\n    The verdict of the `forceLoginOrgs` enterprise sign-in pin for one credential. A managed device may pin Copilot to an approved set of GitHub organizations so a developer cannot sign in with a personal — or another enterprise's — account and escape every control that keys off the signed-in identity. A host must refuse to proceed when `allowed` is false; the remaining fields explain the refusal rather than qualifying it.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
+        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
+        return _ForceLoginOrgsDecision.from_dict(await self._client.request("managedSettings.resolveDeviceForceLoginOrgsGate", params_dict, **_timeout_kwargs(timeout)))
 
 
 # Experimental: this API group is experimental and may change or be removed.
@@ -58105,110 +61582,6 @@ class _InternalServerGlobalStateApi:
 
 
 # Experimental: this API group is experimental and may change or be removed.
-class _InternalServerUserSettingsApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-
-    async def _get_paths(self, params: UserSettingsGetPathsRequest, *, timeout: float | None = None) -> UserSettingsGetPathsResult:
-        "Resolves the on-disk locations of the settings files this runtime reads, so a consumer can show or open them. The user path is the same file `user.settings.get`, `user.settings.load`, and `user.settings.set` operate on. Supply `repoRoot` to also resolve that repository's checked-in and local settings paths. A path is reported whether or not the file exists.\n\nArgs:\n    params: Selects which settings file paths to resolve.\n\nReturns:\n    On-disk locations of the settings files this runtime reads. A path is reported whether or not the file exists.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return UserSettingsGetPathsResult.from_dict(await self._client.request("user.settings.getPaths", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _list_governance_keys(self, *, timeout: float | None = None) -> UserSettingsGovernanceKeysResult:
-        "Lists the top-level user-setting keys by who is allowed to govern them: `repo` keys a repository may override through `.github/copilot/settings.json`, `claudeRepo` keys a repository may override through a Claude-compatible config, and `managed` keys an enterprise policy may fix. The lists are static for a given runtime build and fail closed: a key absent from a list cannot be governed that way.\n\nReturns:\n    Top-level user-setting keys grouped by who may govern them.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        return UserSettingsGovernanceKeysResult.from_dict(await self._client.request("user.settings.listGovernanceKeys", {}, **_timeout_kwargs(timeout)))
-
-    async def _edit(self, params: _UserSettingsEditRequest, *, timeout: float | None = None) -> _SettingsEditResult:
-        "Atomically edits one canonical user setting inside its settings-file lock. Reads, canonicalizes touched aliases, applies the edit, validates the resulting top-level setting and writes before releasing the lock. An explicit autoUpdatesChannel set completes the staff migration in the same transaction. Only a malformed existing file returns `invalid`; refused keys, invalid values and I/O errors reject the call.\n\nArgs:\n    params: One atomic edit of a canonical setting in settings.json.\n\nReturns:\n    Outcome of an atomic user or repository settings edit.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = params.to_dict()
-        return _SettingsEditResult.from_dict(await self._client.request("user.settings.edit", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _normalize(self, params: UserSettingsNormalizeRequest, *, timeout: float | None = None) -> UserSettingsNormalizeResult:
-        "Rewrites legacy and snake_case setting names in a settings object to their canonical spelling. A caller editing settings.json must normalize before writing: a legacy key left in place survives the write, is re-normalized on the next load, and silently shadows the canonical value the write just stored.\n\nArgs:\n    params: Settings object whose key names should be canonicalized.\n\nReturns:\n    Settings object with canonical key names.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return UserSettingsNormalizeResult.from_dict(await self._client.request("user.settings.normalize", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _diagnose_problems(self, params: UserSettingsProblemsRequest, *, timeout: float | None = None) -> UserSettingsProblemsResult:
-        "Diagnoses a set of already-loaded settings layers, reporting each key that will not take effect and why. Settings load tolerantly so that one bad key does not stop a session from starting; this method surfaces what was dropped so a caller can report it instead of silently ignoring the user's intent. Takes the layers as given rather than reading them, so a caller can diagnose exactly the content it is showing, including unsaved edits. Never echoes a setting's value, because a value may be a token or another secret. Marked internal because it exists to carry a CLI call site off the native addon, not to serve a consumer-facing need; it becomes public once an SDK consumer needs to inspect settings health itself.\n\nArgs:\n    params: The settings layers to diagnose.\n\nReturns:\n    The settings that will not take effect across the given layers.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return UserSettingsProblemsResult.from_dict(await self._client.request("user.settings.diagnoseProblems", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _apply_top_key(self, params: UserSettingsApplyTopKeyRequest, *, timeout: float | None = None) -> UserSettingsApplyTopKeyResult:
-        "Validates one top-level setting subtree and writes just that key to settings.json as a single step. Doing both here closes the race a caller cannot close itself: between a separate preflight read and the write, the file may change. Rewriting only the touched key keeps legacy siblings out of settings.json. Answers a status rather than failing, so a validation problem and a write problem stay distinguishable.\n\nArgs:\n    params: A single top-level setting subtree to validate and write.\n\nReturns:\n    Outcome of validating and writing one top-level setting subtree.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = params.to_dict()
-        return UserSettingsApplyTopKeyResult.from_dict(await self._client.request("user.settings.applyTopKey", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _write_all(self, params: UserSettingsWriteAllRequest, *, timeout: float | None = None) -> None:
-        "Replaces the user settings file's entire content in one write. A key absent from `settings` is removed, which is what distinguishes this from `user.settings.set`: that one merges, so it can never clear a key the caller has dropped. For a caller saving the result of a raw edit, a merge would silently resurrect every key the user deleted. Records the same one-time mutation marks a per-key write records, so a setting the user has now chosen explicitly stops being migrated for them.\n\nArgs:\n    params: The whole content to store in the user settings file.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        await self._client.request("user.settings.writeAll", params_dict, **_timeout_kwargs(timeout))
-
-    async def _update(self, params: _UserSettingsUpdateRequest, *, timeout: float | None = None) -> _UserSettingsUpdateResult:
-        "Merges a partial object into one top-level user setting, re-reading the stored value inside this runtime process's settings.json write lock so that concurrent writers in this process to different sub-fields of the same key do not clobber each other. Unlike `user.settings.set`, which replaces a key's whole value with what the caller last read, this keeps sub-fields the caller did not name when both the stored value and supplied value are objects; otherwise the supplied value replaces the stored value. Use it whenever two independent surfaces own different sub-fields of one setting. Returns the key's stored value after the write, in `value`.\n\nArgs:\n    params: Names the user setting to merge into, and the partial object to merge.\n\nReturns:\n    The stored value of the user setting after the merge.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return _UserSettingsUpdateResult.from_dict(await self._client.request("user.settings.update", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _load_for_edit(self, *, timeout: float | None = None) -> UserSettingsLoadForEditResult:
-        "Reads settings.json as stored for a caller that is about to edit it. Unlike `user.settings.get`, this returns file values rather than per-key metadata and defaults. Reports `missing` for an absent file and `invalid` when the existing file will not parse. Retired config.json and extensionless files are not read.\n\nReturns:\n    Contents of settings.json as stored, for a caller about to rewrite it.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        return UserSettingsLoadForEditResult.from_dict(await self._client.request("user.settings.loadForEdit", {}, **_timeout_kwargs(timeout)))
-
-    async def _validate(self, params: UserSettingsValidateRequest, *, timeout: float | None = None) -> UserSettingsValidateResult:
-        "Validates one top-level setting subtree without writing it, reporting each problem with the path it applies to. Scoped to a single top-level key on purpose: validating the whole file would reject an edit whenever an unrelated pre-existing field is malformed, locking the user out of the very tool that could fix it.\n\nArgs:\n    params: A single top-level setting subtree to validate.\n\nReturns:\n    Outcome of validating one top-level setting subtree.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return UserSettingsValidateResult.from_dict(await self._client.request("user.settings.validate", params_dict, **_timeout_kwargs(timeout)))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class _InternalServerUserApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-        self.settings = _InternalServerUserSettingsApi(client)
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class _InternalServerFeatureFlagsApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-
-    async def _list_metadata(self, *, timeout: float | None = None) -> _FeatureFlagsMetadataResult:
-        "Lists every feature flag this runtime declares, with the population each one is declared for, its experimental description, and the online-experiment flag it maps to. This is the static catalog: it describes how each flag is defined, not whether it is on for anyone. Use `featureFlags.resolve` for static values with caller overrides, not active runtime values or experiment assignments.\n\nReturns:\n    Every feature flag this runtime declares, with the shape each one was declared with.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        return _FeatureFlagsMetadataResult.from_dict(await self._client.request("featureFlags.listMetadata", {}, **_timeout_kwargs(timeout)))
-
-    async def _resolve(self, params: _FeatureFlagsResolveRequest, *, timeout: float | None = None) -> dict:
-        "Computes static feature flags from the supplied population and overrides without changing runtime state or verifying audience membership. Starts from declared availability, then applies direct feature-flag environment values, user settings, and explicit `flagOverrides`. It does not apply `COPILOT_EXP_*` experiment assignments, authenticated startup gates, or active runtime state. Settings include `enabledFeatureFlags`, the legacy `feature_flags.enabled` list, and supported convenience settings. Supply `baseFlags` to use an existing flag set instead of declared availability. Omit `isStaffGitHub` or `isStaffMicrosoft` when membership was never recorded: a legacy staff account then counts as both populations.\n\nArgs:\n    params: Caller population and overrides for static feature-flag resolution, independent of experiment assignments and active runtime state.\n\nReturns:\n    The resolved feature flags, keyed by flag name.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return dict(await self._client.request("featureFlags.resolve", params_dict, **_timeout_kwargs(timeout)))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class _InternalServerRepoSettingsApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-
-    async def _read_raw(self, params: _RepoSettingsReadRawRequest, *, timeout: float | None = None) -> _RepoSettingsReadRawResult:
-        "Reads one repository settings file without settings normalization or layering. The existing JSONC parser accepts comments and trailing commas and applies its prototype-safety rules. Missing or blank files return an empty valid config. Invalid files return an empty config with invalid=true; other read failures reject.\n\nArgs:\n    params: Which repository settings file to read.\n\nReturns:\n    Parsed repository settings without normalization or layering.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        return _RepoSettingsReadRawResult.from_dict(await self._client.request("repo.settings.readRaw", params_dict, **_timeout_kwargs(timeout)))
-
-    async def _write_key(self, params: _RepoSettingsWriteKeyRequest, *, timeout: float | None = None) -> None:
-        "Writes or removes one allowed top-level repository setting through the existing validator and file lock. Preserves unrelated stored keys. Invalid keys, values, existing documents, and I/O errors reject without replacing the file. Deletion requires delete=true; otherwise value must be present.\n\nArgs:\n    params: One key to write or remove in a repository settings file.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = params.to_dict()
-        await self._client.request("repo.settings.writeKey", params_dict, **_timeout_kwargs(timeout))
-
-    async def _write_all(self, params: _RepoSettingsWriteAllRequest, *, timeout: float | None = None) -> None:
-        "Replaces the repository-overridable settings in one locked write. Allowed keys present in settings are validated and written; allowed keys absent from settings are removed. Other input keys are ignored, and unknown keys already stored in the file remain unchanged. Invalid values or an invalid existing file reject without a partial write.\n\nArgs:\n    params: The complete set of repository-overridable settings to store.\n\n:meta private:\n\nInternal SDK API; not part of the public surface."
-        params_dict = {k: v for k, v in params.to_dict().items() if v is not None}
-        await self._client.request("repo.settings.writeAll", params_dict, **_timeout_kwargs(timeout))
-
-
-# Experimental: this API group is experimental and may change or be removed.
-class _InternalServerRepoApi:
-    def __init__(self, client: "JsonRpcClient"):
-        self._client = client
-        self.settings = _InternalServerRepoSettingsApi(client)
-
-
-# Experimental: this API group is experimental and may change or be removed.
 class _InternalServerGitHubRepositoryApi:
     def __init__(self, client: "JsonRpcClient"):
         self._client = client
@@ -58320,15 +61693,19 @@ class _InternalServerRpc:
     """Internal SDK server-scoped RPC methods. Not part of the public API."""
     def __init__(self, client: "JsonRpcClient"):
         self._client = client
+        self.sandbox = _InternalServerSandboxApi(client)
+        self.persistence = _InternalServerPersistenceApi(client)
+        self.user = _InternalServerUserApi(client)
+        self.repo = _InternalServerRepoApi(client)
+        self.feature_flags = _InternalServerFeatureFlagsApi(client)
+        self.permissions = _InternalServerPermissionsApi(client)
+        self.managed_settings = _InternalServerManagedSettingsApi(client)
         self.host = _InternalServerHostApi(client)
         self.account = _InternalServerAccountApi(client)
         self.mcp = _InternalServerMcpApi(client)
         self.instructions = _InternalServerInstructionsApi(client)
         self.agents = _InternalServerAgentsApi(client)
         self.global_state = _InternalServerGlobalStateApi(client)
-        self.user = _InternalServerUserApi(client)
-        self.feature_flags = _InternalServerFeatureFlagsApi(client)
-        self.repo = _InternalServerRepoApi(client)
         self.git_hub_repository = _InternalServerGitHubRepositoryApi(client)
         self.git_hub_owners = _InternalServerGitHubOwnersApi(client)
         self.git = _InternalServerGitApi(client)
@@ -61585,6 +64962,7 @@ __all__ = [
     "ExternalToolTextResultForLlmContentText",
     "ExternalToolTextResultForLlmContentType",
     "FeatureFlagsResolveResult",
+    "FeatureFlagsResolveStartupGatesResult",
     "FilterMapping",
     "FleetApi",
     "FleetStartRequest",
@@ -62181,6 +65559,7 @@ __all__ = [
     "PermissionsConfigureAdditionalContentExclusionPolicyScope",
     "PermissionsConfigureParams",
     "PermissionsConfigureResult",
+    "PermissionsEvaluateManagedPolicyResult",
     "PermissionsFolderTrustAddTrustedResult",
     "PermissionsFolderTrustApi",
     "PermissionsGetModeRequest",
@@ -62219,6 +65598,8 @@ __all__ = [
     "PermissionsSetRequiredResult",
     "PermissionsUrlsApi",
     "PermissionsUrlsSetUnrestrictedModeResult",
+    "PersistenceWriteRawJSONLockedRequest",
+    "PersistenceWriteRawJSONLockedResult",
     "Phase",
     "PingRequest",
     "PingResult",
@@ -62406,6 +65787,10 @@ __all__ = [
     "ResponseFormatType",
     "ReviewClass",
     "SandboxApi",
+    "SandboxApplyDefaultsRequest",
+    "SandboxCheckEnforcementCommandResult",
+    "SandboxCheckPlatformSupportResult",
+    "SandboxCheckWindowsHostLoopbackSupportResult",
     "SandboxConfig",
     "SandboxConfigAuth",
     "SandboxConfigSource",
@@ -62421,7 +65806,10 @@ __all__ = [
     "SandboxCredentialsConfig",
     "SandboxDisableForSessionRequest",
     "SandboxDisableForSessionResult",
+    "SandboxDocsURLResult",
     "SandboxEnforcementStatus",
+    "SandboxGetUnsupportedMessageResult",
+    "SandboxGetUnsupportedSettingDisabledNoticeResult",
     "SandboxGrantPathForRequestRequest",
     "SandboxGrantPathForRequestResult",
     "SandboxHostCapability",
@@ -62432,7 +65820,15 @@ __all__ = [
     "SandboxProxyCARequest",
     "SandboxProxyCAState",
     "SandboxProxyCAStatus",
+    "SandboxProxyCaCheckInstallationSupportResult",
+    "SandboxProxyCaCheckRelevanceResult",
+    "SandboxProxySecretGetResult",
+    "SandboxProxySecretLocation",
+    "SandboxProxySecretSaveRequest",
+    "SandboxProxySecretSaveResult",
+    "SandboxResolveFlooredConfigResult",
     "SandboxSessionChange",
+    "SandboxSettingsApplyDefaultsResult",
     "Saved",
     "ScheduleAddAtRequest",
     "ScheduleAddCronRequest",
@@ -62794,6 +66190,8 @@ __all__ = [
     "SlashCommandTextResult",
     "SlashCommandTimelineEntry",
     "SourceClass",
+    "StaffLogLevelMigrationStatus",
+    "StaffUpdateChannelMigrationStatus",
     "SubagentSettings",
     "SubagentSettingsEntry",
     "SubagentSettingsEntryContextTier",
@@ -62928,13 +66326,22 @@ __all__ = [
     "UserSettingMetadata",
     "UserSettingsApplyTopKeyRequest",
     "UserSettingsApplyTopKeyResult",
+    "UserSettingsBuildRuntimeResult",
     "UserSettingsGetPathsRequest",
     "UserSettingsGetPathsResult",
     "UserSettingsGetResult",
     "UserSettingsGovernanceKeysResult",
+    "UserSettingsHostContext",
+    "UserSettingsLoadForConfigDirResult",
     "UserSettingsLoadForEditResult",
+    "UserSettingsLoadRepoRequest",
+    "UserSettingsLoadRepoResult",
+    "UserSettingsLoadWithWarningResult",
+    "UserSettingsMergeManagedAndUserResult",
+    "UserSettingsMergeRepoValueResult",
     "UserSettingsNormalizeRequest",
     "UserSettingsNormalizeResult",
+    "UserSettingsPathResult",
     "UserSettingsProblem",
     "UserSettingsProblemLocation",
     "UserSettingsProblemSource",
