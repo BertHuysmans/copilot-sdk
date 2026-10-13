@@ -672,9 +672,6 @@ func (*SessionContextClearedData) Type() SessionEventType {
 
 // Conversation compaction results including success status, metrics, and optional error details
 type SessionCompactionCompleteData struct {
-	// Legacy active-workflow reminder retained for replay compatibility
-	// Internal: ActiveFactorySummary is part of the SDK's internal API surface and is not intended for external use.
-	ActiveFactorySummary *string `json:"activeFactorySummary,omitempty"`
 	// Authoritative active-workflow reminder appended to the compacted context
 	// Internal: ActiveWorkflowSummary is part of the SDK's internal API surface and is not intended for external use.
 	ActiveWorkflowSummary *string `json:"activeWorkflowSummary,omitempty"`
@@ -3175,8 +3172,6 @@ type SubagentStartedData struct {
 	AgentType *string `json:"agentType,omitempty"`
 	// Whether the sub-agent runs synchronously or in the background.
 	ExecutionMode *string `json:"executionMode,omitempty"`
-	// Legacy root id of the workflow run that spawned this sub-agent. New consumers should use workflowRunId.
-	FactoryRunID *string `json:"factoryRunId,omitempty"`
 	// Model the sub-agent will run with, when known at start.
 	Model *string `json:"model,omitempty"`
 	// Authority or runtime mechanism responsible for sub-agent model selection, when known at start.

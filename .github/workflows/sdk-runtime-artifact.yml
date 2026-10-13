@@ -137,7 +137,7 @@ jobs:
       !cancelled() &&
       (inputs.runtime-source == 'published' ||
        (needs.cache-relay.result == 'success' && needs.cache-relay.outputs.cache-hit != 'true'))
-    runs-on: ${{ inputs.runtime-source == 'checkout' && inputs.os || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runtime-source == 'checkout' && inputs.os || 'ubuntu-26.04-2core-agent-runtime' }}
     permissions:
       actions: read
       contents: read

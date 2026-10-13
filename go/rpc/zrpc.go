@@ -2184,7 +2184,7 @@ type CatalogAgentPluginCandidateProvenance struct {
 	// Host of the catalog authority that advertised the reference, without path, query, or
 	// credentials. Inert untrusted data.
 	Authority string `json:"authority"`
-	// Canonical Agent Plugin media type.
+	// Media type naming the plugin's format.
 	MediaType CatalogAgentPluginMediaType `json:"mediaType"`
 	// ISO 8601 timestamp at which the runtime observed the catalog reference. This is not a
 	// retrieval or validation timestamp.
@@ -2245,7 +2245,7 @@ type CatalogAgentPluginCandidate struct {
 	// Validated, normalised catalogue resource URN. This identity comes only from the catalog
 	// identifier and is never inferred from display text or installed-plugin state.
 	Identity string `json:"identity"`
-	// Canonical Agent Plugin media type.
+	// Media type naming the plugin's format.
 	MediaType CatalogAgentPluginMediaType `json:"mediaType"`
 	// Where the Agent Plugin catalog reference was observed, without its descriptor, URL, raw
 	// data, or content digest.
@@ -25436,12 +25436,18 @@ const (
 	CatalogAgentPluginCompatibilityTagGitHubCopilot CatalogAgentPluginCompatibilityTag = "github-copilot"
 )
 
-// Canonical Agent Plugin media type
+// Media type naming the plugin format of an Agent Plugin candidate. Values other than
+// `application/vnd.github.copilot-plugin` appear only when the caller requires the
+// agent-plugin-formats capability.
 // Experimental: CatalogAgentPluginMediaType is part of an experimental API and may change
 // or be removed.
 type CatalogAgentPluginMediaType string
 
 const (
+	// A portable Agent Plugin descriptor.
+	CatalogAgentPluginMediaTypeApplicationAgentPluginJSON CatalogAgentPluginMediaType = "application/agent-plugin+json"
+	// A Claude plugin descriptor (`.claude-plugin/plugin.json` layout).
+	CatalogAgentPluginMediaTypeApplicationVndAnthropicClaudePluginJSON CatalogAgentPluginMediaType = "application/vnd.anthropic.claude-plugin+json"
 	// A GitHub Copilot Agent Plugin descriptor.
 	CatalogAgentPluginMediaTypeApplicationVndGitHubCopilotPlugin CatalogAgentPluginMediaType = "application/vnd.github.copilot-plugin"
 )
@@ -25532,6 +25538,12 @@ const (
 	// Understands opt-in `application/vnd.github.copilot-plugin` candidates and their typed
 	// identity, version, source, and compatibility fields.
 	CatalogCapabilityAgentPluginDiscovery CatalogCapability = "agent-plugin-discovery"
+	// Extends agent-plugin-discovery to Claude plugin
+	// (`application/vnd.anthropic.claude-plugin+json`) and portable Agent Plugin
+	// (`application/agent-plugin+json`) candidates, each reporting its format as its media
+	// type. Requires agent-plugin-discovery; without it, plugin searches return only Copilot
+	// plugins.
+	CatalogCapabilityAgentPluginFormats CatalogCapability = "agent-plugin-formats"
 	// Understands `application/ai-skill` candidates as discovery-only and typed non-installable.
 	CatalogCapabilityAiSkillDiscovery CatalogCapability = "ai-skill-discovery"
 	// Requires an eligible credential for the selected GitHub.com account before search egress
@@ -25713,12 +25725,18 @@ const (
 type CatalogMediaType string
 
 const (
+	// An inert portable Agent Plugin descriptor, surfaced only under the agent-plugin-formats
+	// capability.
+	CatalogMediaTypeApplicationAgentPluginJSON CatalogMediaType = "application/agent-plugin+json"
 	// An AI skill card. Representable and searchable, but typed non-installable.
 	CatalogMediaTypeApplicationAiSkill CatalogMediaType = "application/ai-skill"
 	// The current MCP server card media type.
 	CatalogMediaTypeApplicationMCPServerCardJSON CatalogMediaType = "application/mcp-server-card+json"
 	// The legacy MCP server card media type, accepted for compatibility.
 	CatalogMediaTypeApplicationMCPServerJSON CatalogMediaType = "application/mcp-server+json"
+	// An inert Claude plugin descriptor, surfaced only under the agent-plugin-formats
+	// capability.
+	CatalogMediaTypeApplicationVndAnthropicClaudePluginJSON CatalogMediaType = "application/vnd.anthropic.claude-plugin+json"
 	// An inert Agent Plugin descriptor.
 	CatalogMediaTypeApplicationVndGitHubCopilotPlugin CatalogMediaType = "application/vnd.github.copilot-plugin"
 )

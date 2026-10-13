@@ -622,7 +622,7 @@ export type CardDigestValue = string;
 /** @experimental */
 export type CatalogAgentPluginCandidateKind = /** An Agent Plugin. */ "plugin";
 /**
- * Canonical Agent Plugin media type
+ * Media type naming the plugin format of an Agent Plugin candidate. Values other than `application/vnd.github.copilot-plugin` appear only when the caller requires the agent-plugin-formats capability.
  *
  * This interface was referenced by `_RpcSchemaRoot`'s JSON-Schema
  * via the `definition` "CatalogAgentPluginMediaType".
@@ -630,7 +630,11 @@ export type CatalogAgentPluginCandidateKind = /** An Agent Plugin. */ "plugin";
 /** @experimental */
 export type CatalogAgentPluginMediaType =
   /** A GitHub Copilot Agent Plugin descriptor. */
-  "application/vnd.github.copilot-plugin";
+  | "application/vnd.github.copilot-plugin"
+  /** A Claude plugin descriptor (`.claude-plugin/plugin.json` layout). */
+  | "application/vnd.anthropic.claude-plugin+json"
+  /** A portable Agent Plugin descriptor. */
+  | "application/agent-plugin+json";
 /**
  * Canonical catalogue resource identity. The runtime rewrites accepted urn:ai and urn:air identifiers to urn:air, lowercases the authority, and preserves the remaining resource components.
  *
@@ -912,6 +916,8 @@ export type CatalogCapability =
   | "ai-skill-discovery"
   /** Understands opt-in `application/vnd.github.copilot-plugin` candidates and their typed identity, version, source, and compatibility fields. */
   | "agent-plugin-discovery"
+  /** Extends agent-plugin-discovery to Claude plugin (`application/vnd.anthropic.claude-plugin+json`) and portable Agent Plugin (`application/agent-plugin+json`) candidates, each reporting its format as its media type. Requires agent-plugin-discovery; without it, plugin searches return only Copilot plugins. */
+  | "agent-plugin-formats"
   /** Understands side-effect-free MCP install-plan requests, results, and plan handles; `planning-unavailable` separately reports that planning is not enabled. */
   | "mcp-install-planning"
   /** Understands plans that enumerate every eligible transport rather than a single preferred one. */
@@ -1055,7 +1061,11 @@ export type CatalogMediaType =
   /** An AI skill card. Representable and searchable, but typed non-installable. */
   | "application/ai-skill"
   /** An inert Agent Plugin descriptor. */
-  | "application/vnd.github.copilot-plugin";
+  | "application/vnd.github.copilot-plugin"
+  /** An inert Claude plugin descriptor, surfaced only under the agent-plugin-formats capability. */
+  | "application/vnd.anthropic.claude-plugin+json"
+  /** An inert portable Agent Plugin descriptor, surfaced only under the agent-plugin-formats capability. */
+  | "application/agent-plugin+json";
 /**
  * Why capability and protocol-version negotiation refused a caller
  *

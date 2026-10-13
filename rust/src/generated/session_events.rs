@@ -2577,10 +2577,6 @@ pub struct ResponsesReasoning {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionCompactionCompleteData {
-    /// Legacy active-workflow reminder retained for replay compatibility
-    #[doc(hidden)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) active_factory_summary: Option<String>,
     /// Authoritative active-workflow reminder appended to the compacted context
     #[doc(hidden)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -5702,9 +5698,6 @@ pub struct SubagentStartedData {
     /// Whether the sub-agent runs synchronously or in the background.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub execution_mode: Option<String>,
-    /// Legacy root id of the workflow run that spawned this sub-agent. New consumers should use workflowRunId.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub factory_run_id: Option<String>,
     /// Model the sub-agent will run with, when known at start.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,

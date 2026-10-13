@@ -169,7 +169,7 @@ jobs:
     name: "Detect SDK layout"
     needs: detect-sdk-changes
     if: ${{ !cancelled() && (needs.detect-sdk-changes.result != 'success' || needs.detect-sdk-changes.outputs.has_sdk_changes == 'true') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04-2core-agent-runtime
     outputs:
       runtime-source: ${{ steps.detect.outputs.runtime-source }}
       sdk-home: ${{ steps.detect.outputs.sdk-home }}
@@ -348,7 +348,7 @@ jobs:
     with:
       runtime-source: ${{ needs.detect-layout.outputs.runtime-source }}
       sdk-home: ${{ needs.detect-layout.outputs.sdk-home }}
-      os: ubuntu-latest-xl
+      os: ubuntu-26.04-16core-agent-runtime
       target: linux-x64
       artifact: Linux-X64-gnu
       bazel-config: e2e-no-lto
@@ -368,7 +368,7 @@ jobs:
     with:
       runtime-source: ${{ needs.detect-layout.outputs.runtime-source }}
       sdk-home: ${{ needs.detect-layout.outputs.sdk-home }}
-      os: ubuntu-latest-xl
+      os: ubuntu-26.04-16core-agent-runtime
       target: linuxmusl-x64
       artifact: Linux-X64-musl
       bazel-config: e2e-no-lto
@@ -387,7 +387,7 @@ jobs:
     with:
       runtime-source: ${{ needs.detect-layout.outputs.runtime-source }}
       sdk-home: ${{ needs.detect-layout.outputs.sdk-home }}
-      os: ubuntu-latest-xl
+      os: ubuntu-26.04-16core-agent-runtime
       target: linuxmusl-arm64
       artifact: Linux-ARM64-musl
       bazel-config: e2e-no-lto
@@ -427,7 +427,7 @@ jobs:
     with:
       runtime-source: ${{ needs.detect-layout.outputs.runtime-source }}
       sdk-home: ${{ needs.detect-layout.outputs.sdk-home }}
-      os: windows-2025-16core
+      os: windows-2025-16core-agent-runtime
       target: win32-x64
       artifact: Windows-X64
       bazel-config: windows-e2e-no-icf
@@ -518,7 +518,7 @@ jobs:
   check-freshness:
     name: "Check schema and SDK freshness"
     needs: detect-layout
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04-2core-agent-runtime
     permissions:
       contents: read
       id-token: write

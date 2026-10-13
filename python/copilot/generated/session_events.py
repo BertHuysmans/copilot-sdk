@@ -9484,8 +9484,6 @@ class SessionCompactionCompleteData:
     "Conversation compaction results including success status, metrics, and optional error details"
     success: bool
     # Internal: this field is an internal SDK API and is not part of the public surface.
-    _active_factory_summary: str | None = None
-    # Internal: this field is an internal SDK API and is not part of the public surface.
     _active_workflow_summary: str | None = None
     behavior_model_id: str | None = None
     checkpoint_number: int | None = None
@@ -9513,7 +9511,6 @@ class SessionCompactionCompleteData:
     def from_dict(obj: Any) -> "SessionCompactionCompleteData":
         assert isinstance(obj, dict)
         success = from_bool(obj.get("success"))
-        _active_factory_summary = from_union([from_none, from_str], obj.get("activeFactorySummary"))
         _active_workflow_summary = from_union([from_none, from_str], obj.get("activeWorkflowSummary"))
         behavior_model_id = from_union([from_none, from_str], obj.get("behaviorModelId"))
         checkpoint_number = from_union([from_none, from_int], obj.get("checkpointNumber"))
@@ -9538,7 +9535,6 @@ class SessionCompactionCompleteData:
         trigger = from_union([from_none, lambda x: parse_enum(CompactionTrigger, x)], obj.get("trigger"))
         return SessionCompactionCompleteData(
             success=success,
-            _active_factory_summary=_active_factory_summary,
             _active_workflow_summary=_active_workflow_summary,
             behavior_model_id=behavior_model_id,
             checkpoint_number=checkpoint_number,
@@ -9566,8 +9562,6 @@ class SessionCompactionCompleteData:
     def to_dict(self) -> dict:
         result: dict = {}
         result["success"] = from_bool(self.success)
-        if self._active_factory_summary is not None:
-            result["activeFactorySummary"] = from_union([from_none, from_str], self._active_factory_summary)
         if self._active_workflow_summary is not None:
             result["activeWorkflowSummary"] = from_union([from_none, from_str], self._active_workflow_summary)
         if self.behavior_model_id is not None:
@@ -12130,7 +12124,6 @@ class SubagentStartedData:
     tool_call_id: str
     agent_type: str | None = None
     execution_mode: str | None = None
-    factory_run_id: str | None = None
     model: str | None = None
     model_selection_source: SubagentModelSelectionSource | None = None
     parent_id: str | None = None
@@ -12147,7 +12140,6 @@ class SubagentStartedData:
         tool_call_id = from_str(obj.get("toolCallId"))
         agent_type = from_union([from_none, from_str], obj.get("agentType"))
         execution_mode = from_union([from_none, from_str], obj.get("executionMode"))
-        factory_run_id = from_union([from_none, from_str], obj.get("factoryRunId"))
         model = from_union([from_none, from_str], obj.get("model"))
         model_selection_source = from_union([from_none, lambda x: parse_enum(SubagentModelSelectionSource, x)], obj.get("modelSelectionSource"))
         parent_id = from_union([from_none, from_str], obj.get("parentId"))
@@ -12161,7 +12153,6 @@ class SubagentStartedData:
             tool_call_id=tool_call_id,
             agent_type=agent_type,
             execution_mode=execution_mode,
-            factory_run_id=factory_run_id,
             model=model,
             model_selection_source=model_selection_source,
             parent_id=parent_id,
@@ -12180,8 +12171,6 @@ class SubagentStartedData:
             result["agentType"] = from_union([from_none, from_str], self.agent_type)
         if self.execution_mode is not None:
             result["executionMode"] = from_union([from_none, from_str], self.execution_mode)
-        if self.factory_run_id is not None:
-            result["factoryRunId"] = from_union([from_none, from_str], self.factory_run_id)
         if self.model is not None:
             result["model"] = from_union([from_none, from_str], self.model)
         if self.model_selection_source is not None:

@@ -4268,12 +4268,6 @@ export interface CompactionCompleteEvent {
  */
 export interface CompactionCompleteData {
   /**
-   * Legacy active-workflow reminder retained for replay compatibility
-   *
-   * @internal
-   */
-  activeFactorySummary?: string;
-  /**
    * Authoritative active-workflow reminder appended to the compacted context
    *
    * @internal
@@ -8757,10 +8751,6 @@ export interface SubagentStartedData {
    * Whether the sub-agent runs synchronously or in the background.
    */
   executionMode?: string;
-  /**
-   * Legacy root id of the workflow run that spawned this sub-agent. New consumers should use workflowRunId.
-   */
-  factoryRunId?: string;
   /**
    * Model the sub-agent will run with, when known at start.
    */

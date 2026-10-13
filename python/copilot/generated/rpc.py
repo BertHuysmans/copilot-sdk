@@ -1877,6 +1877,7 @@ class CatalogCapability(Enum):
     enabled the operation; typed unavailable results report availability separately.
     """
     AGENT_PLUGIN_DISCOVERY = "agent-plugin-discovery"
+    AGENT_PLUGIN_FORMATS = "agent-plugin-formats"
     AI_SKILL_DISCOVERY = "ai-skill-discovery"
     CATALOG_SEARCH_CREDENTIAL_REQUIRED = "catalog-search-credential-required"
     CATALOG_SEARCH_PAGINATION = "catalog-search-pagination"
@@ -31645,10 +31646,14 @@ class CatalogAgentPluginCandidateKind(Enum):
 
 # Experimental: this type is part of an experimental API and may change or be removed.
 class CatalogAgentPluginMediaType(Enum):
-    """Canonical Agent Plugin media type.
+    """Media type naming the plugin's format.
 
-    Canonical Agent Plugin media type
+    Media type naming the plugin format of an Agent Plugin candidate. Values other than
+    `application/vnd.github.copilot-plugin` appear only when the caller requires the
+    agent-plugin-formats capability.
     """
+    APPLICATION_AGENT_PLUGIN_JSON = "application/agent-plugin+json"
+    APPLICATION_VND_ANTHROPIC_CLAUDE_PLUGIN_JSON = "application/vnd.anthropic.claude-plugin+json"
     APPLICATION_VND_GITHUB_COPILOT_PLUGIN = "application/vnd.github.copilot-plugin"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -31679,17 +31684,21 @@ class CatalogMediaType(Enum):
 
     Canonical AI skill media type
 
-    Canonical Agent Plugin media type.
+    Media type naming the plugin's format.
 
-    Canonical Agent Plugin media type
+    Media type naming the plugin format of an Agent Plugin candidate. Values other than
+    `application/vnd.github.copilot-plugin` appear only when the caller requires the
+    agent-plugin-formats capability.
 
     Media type the card was interpreted as, when it declared one this runtime recognises.
 
     Media type a catalog card is interpreted as
     """
+    APPLICATION_AGENT_PLUGIN_JSON = "application/agent-plugin+json"
     APPLICATION_AI_SKILL = "application/ai-skill"
     APPLICATION_MCP_SERVER_CARD_JSON = "application/mcp-server-card+json"
     APPLICATION_MCP_SERVER_JSON = "application/mcp-server+json"
+    APPLICATION_VND_ANTHROPIC_CLAUDE_PLUGIN_JSON = "application/vnd.anthropic.claude-plugin+json"
     APPLICATION_VND_GITHUB_COPILOT_PLUGIN = "application/vnd.github.copilot-plugin"
 
 # Experimental: this type is part of an experimental API and may change or be removed.
@@ -41640,7 +41649,7 @@ class CatalogAgentPluginCandidateProvenance:
     credentials. Inert untrusted data.
     """
     media_type: CatalogAgentPluginMediaType
-    """Canonical Agent Plugin media type."""
+    """Media type naming the plugin's format."""
 
     observed_at: str
     """ISO 8601 timestamp at which the runtime observed the catalog reference. This is not a
@@ -41723,7 +41732,7 @@ class CatalogCandidateProvenance:
 
     Media type advertised for the referenced AI skill card
 
-    Canonical Agent Plugin media type.
+    Media type naming the plugin's format.
     """
     observed_at: str
     """ISO 8601 timestamp at which the runtime observed the catalog reference. This is not a
@@ -46885,7 +46894,7 @@ class CatalogAgentPluginCandidate:
     """Discriminator: this candidate describes an Agent Plugin."""
 
     media_type: CatalogAgentPluginMediaType
-    """Canonical Agent Plugin media type."""
+    """Media type naming the plugin's format."""
 
     provenance: CatalogAgentPluginCandidateProvenance
     """Where the Agent Plugin catalog reference was observed, without its descriptor, URL, raw
@@ -46981,7 +46990,7 @@ class CatalogCandidate:
 
     Media type of the underlying AI skill card
 
-    Canonical Agent Plugin media type.
+    Media type naming the plugin's format.
     """
     provenance: CatalogCandidateProvenance
     """Where the catalog reference was observed, without the card itself or any content digest.

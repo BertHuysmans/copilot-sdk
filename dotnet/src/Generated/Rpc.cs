@@ -8145,7 +8145,7 @@ public sealed class CatalogAgentPluginCandidateProvenance
     [JsonPropertyName("authority")]
     public string Authority { get; set; } = string.Empty;
 
-    /// <summary>Canonical Agent Plugin media type.</summary>
+    /// <summary>Media type naming the plugin's format.</summary>
     [JsonPropertyName("mediaType")]
     public CatalogAgentPluginMediaType MediaType { get; set; }
 
@@ -8204,7 +8204,7 @@ public partial class CatalogCandidatePlugin : CatalogCandidate
     [JsonPropertyName("identity")]
     public required string Identity { get; set; }
 
-    /// <summary>Canonical Agent Plugin media type.</summary>
+    /// <summary>Media type naming the plugin's format.</summary>
     [JsonPropertyName("mediaType")]
     public required CatalogAgentPluginMediaType MediaType { get; set; }
 
@@ -32163,6 +32163,9 @@ public readonly struct CatalogCapability : IEquatable<CatalogCapability>
     /// <summary>Understands opt-in `application/vnd.github.copilot-plugin` candidates and their typed identity, version, source, and compatibility fields.</summary>
     public static CatalogCapability AgentPluginDiscovery { get; } = new("agent-plugin-discovery");
 
+    /// <summary>Extends agent-plugin-discovery to Claude plugin (`application/vnd.anthropic.claude-plugin+json`) and portable Agent Plugin (`application/agent-plugin+json`) candidates, each reporting its format as its media type. Requires agent-plugin-discovery; without it, plugin searches return only Copilot plugins.</summary>
+    public static CatalogCapability AgentPluginFormats { get; } = new("agent-plugin-formats");
+
     /// <summary>Understands side-effect-free MCP install-plan requests, results, and plan handles; `planning-unavailable` separately reports that planning is not enabled.</summary>
     public static CatalogCapability McpInstallPlanning { get; } = new("mcp-install-planning");
 
@@ -33497,6 +33500,12 @@ public readonly struct CatalogMediaType : IEquatable<CatalogMediaType>
 
     /// <summary>An inert Agent Plugin descriptor.</summary>
     public static CatalogMediaType ApplicationVndGitHubCopilotPlugin { get; } = new("application/vnd.github.copilot-plugin");
+
+    /// <summary>An inert Claude plugin descriptor, surfaced only under the agent-plugin-formats capability.</summary>
+    public static CatalogMediaType ApplicationVndAnthropicClaudePluginJson { get; } = new("application/vnd.anthropic.claude-plugin+json");
+
+    /// <summary>An inert portable Agent Plugin descriptor, surfaced only under the agent-plugin-formats capability.</summary>
+    public static CatalogMediaType ApplicationAgentPluginJson { get; } = new("application/agent-plugin+json");
 
     /// <summary>Returns a value indicating whether two <see cref="CatalogMediaType"/> instances are equivalent.</summary>
     public static bool operator ==(CatalogMediaType left, CatalogMediaType right) => left.Equals(right);
@@ -35476,7 +35485,7 @@ public readonly struct CatalogAgentPluginCompatibilityTag : IEquatable<CatalogAg
 }
 
 
-/// <summary>Canonical Agent Plugin media type.</summary>
+/// <summary>Media type naming the plugin format of an Agent Plugin candidate. Values other than `application/vnd.github.copilot-plugin` appear only when the caller requires the agent-plugin-formats capability.</summary>
 [Experimental(global::GitHub.Copilot.Diagnostics.Experimental)]
 [JsonConverter(typeof(Converter))]
 [DebuggerDisplay("{Value,nq}")]
@@ -35498,6 +35507,12 @@ public readonly struct CatalogAgentPluginMediaType : IEquatable<CatalogAgentPlug
 
     /// <summary>A GitHub Copilot Agent Plugin descriptor.</summary>
     public static CatalogAgentPluginMediaType ApplicationVndGitHubCopilotPlugin { get; } = new("application/vnd.github.copilot-plugin");
+
+    /// <summary>A Claude plugin descriptor (`.claude-plugin/plugin.json` layout).</summary>
+    public static CatalogAgentPluginMediaType ApplicationVndAnthropicClaudePluginJson { get; } = new("application/vnd.anthropic.claude-plugin+json");
+
+    /// <summary>A portable Agent Plugin descriptor.</summary>
+    public static CatalogAgentPluginMediaType ApplicationAgentPluginJson { get; } = new("application/agent-plugin+json");
 
     /// <summary>Returns a value indicating whether two <see cref="CatalogAgentPluginMediaType"/> instances are equivalent.</summary>
     public static bool operator ==(CatalogAgentPluginMediaType left, CatalogAgentPluginMediaType right) => left.Equals(right);

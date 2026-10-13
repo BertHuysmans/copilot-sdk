@@ -4702,7 +4702,7 @@ impl CardDigest {
 pub struct CatalogAgentPluginCandidateProvenance {
     /// Host of the catalog authority that advertised the reference, without path, query, or credentials. Inert untrusted data.
     pub authority: String,
-    /// Canonical Agent Plugin media type.
+    /// Media type naming the plugin's format.
     pub media_type: CatalogAgentPluginMediaType,
     /// ISO 8601 timestamp at which the runtime observed the catalog reference. This is not a retrieval or validation timestamp.
     pub observed_at: String,
@@ -4748,7 +4748,7 @@ pub struct CatalogAgentPluginCandidate {
     /// Discriminator: this candidate describes an Agent Plugin.
     #[serde(deserialize_with = "CatalogAgentPluginCandidate::deserialize_kind")]
     pub kind: CatalogAgentPluginCandidateKind,
-    /// Canonical Agent Plugin media type.
+    /// Media type naming the plugin's format.
     pub media_type: CatalogAgentPluginMediaType,
     /// Where the Agent Plugin catalog reference was observed, without its descriptor, URL, raw data, or content digest.
     pub provenance: CatalogAgentPluginCandidateProvenance,
@@ -42743,7 +42743,7 @@ pub enum CatalogAgentPluginCandidateKind {
     Unknown,
 }
 
-/// Canonical Agent Plugin media type
+/// Media type naming the plugin format of an Agent Plugin candidate. Values other than `application/vnd.github.copilot-plugin` appear only when the caller requires the agent-plugin-formats capability.
 ///
 /// <div class="warning">
 ///
@@ -42756,6 +42756,12 @@ pub enum CatalogAgentPluginMediaType {
     /// A GitHub Copilot Agent Plugin descriptor.
     #[serde(rename = "application/vnd.github.copilot-plugin")]
     ApplicationVndGitHubCopilotPlugin,
+    /// A Claude plugin descriptor (`.claude-plugin/plugin.json` layout).
+    #[serde(rename = "application/vnd.anthropic.claude-plugin+json")]
+    ApplicationVndAnthropicClaudePluginJson,
+    /// A portable Agent Plugin descriptor.
+    #[serde(rename = "application/agent-plugin+json")]
+    ApplicationAgentPluginJson,
     /// Unknown variant for forward compatibility.
     #[default]
     #[serde(other)]
@@ -43021,6 +43027,9 @@ pub enum CatalogCapability {
     /// Understands opt-in `application/vnd.github.copilot-plugin` candidates and their typed identity, version, source, and compatibility fields.
     #[serde(rename = "agent-plugin-discovery")]
     AgentPluginDiscovery,
+    /// Extends agent-plugin-discovery to Claude plugin (`application/vnd.anthropic.claude-plugin+json`) and portable Agent Plugin (`application/agent-plugin+json`) candidates, each reporting its format as its media type. Requires agent-plugin-discovery; without it, plugin searches return only Copilot plugins.
+    #[serde(rename = "agent-plugin-formats")]
+    AgentPluginFormats,
     /// Understands side-effect-free MCP install-plan requests, results, and plan handles; `planning-unavailable` separately reports that planning is not enabled.
     #[serde(rename = "mcp-install-planning")]
     McpInstallPlanning,
@@ -43250,6 +43259,12 @@ pub enum CatalogMediaType {
     /// An inert Agent Plugin descriptor.
     #[serde(rename = "application/vnd.github.copilot-plugin")]
     ApplicationVndGitHubCopilotPlugin,
+    /// An inert Claude plugin descriptor, surfaced only under the agent-plugin-formats capability.
+    #[serde(rename = "application/vnd.anthropic.claude-plugin+json")]
+    ApplicationVndAnthropicClaudePluginJson,
+    /// An inert portable Agent Plugin descriptor, surfaced only under the agent-plugin-formats capability.
+    #[serde(rename = "application/agent-plugin+json")]
+    ApplicationAgentPluginJson,
     /// Unknown variant for forward compatibility.
     #[default]
     #[serde(other)]

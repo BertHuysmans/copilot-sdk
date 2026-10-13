@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.platform == 'linux-x64' && '["ubuntu-latest"]' || inputs.platform == 'darwin-arm64' && '["macos-26-xlarge-agent-runtime"]' || inputs.platform == 'win32-x64' && '["windows-latest"]' || '["ubuntu-latest","macos-26-xlarge-agent-runtime","windows-latest"]') }}
+        os: ${{ fromJSON(inputs.platform == 'linux-x64' && '["ubuntu-26.04-2core-agent-runtime"]' || inputs.platform == 'darwin-arm64' && '["macos-26-xlarge-agent-runtime"]' || inputs.platform == 'win32-x64' && '["windows-2025-4core-agent-runtime"]' || '["ubuntu-26.04-2core-agent-runtime","macos-26-xlarge-agent-runtime","windows-2025-4core-agent-runtime"]') }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -127,7 +127,7 @@ jobs:
   rust-musl-x64:
     name: "Rust (Alpine x64)"
     if: inputs.platform == 'all' || inputs.platform == 'linuxmusl-x64'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04-2core-agent-runtime
     steps:
       - uses: actions/checkout@v7
         with:
