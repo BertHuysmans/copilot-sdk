@@ -2181,6 +2181,11 @@ pub struct SessionConfig {
     pub enable_host_git_operations: Option<bool>,
     /// When true, enables the session store for this session.
     pub enable_session_store: Option<bool>,
+    /// When true, requests the read-only GitHub cache store for this session.
+    ///
+    /// The runtime registers `github_sql` only when its `GITHUB_CACHE_STORE`
+    /// feature flag is enabled. Defaults to disabled.
+    pub enable_github_cache_store: Option<bool>,
     /// When true, enables skills for this session.
     pub enable_skills: Option<bool>,
     /// **Experimental.** Supplies session-scoped skills from the SDK host.
@@ -2536,6 +2541,7 @@ impl std::fmt::Debug for SessionConfig {
                 &self.enable_host_git_operations,
             )
             .field("enable_session_store", &self.enable_session_store)
+            .field("enable_github_cache_store", &self.enable_github_cache_store)
             .field("enable_skills", &self.enable_skills)
             .field(
                 "skill_provider",
@@ -2679,6 +2685,7 @@ impl Default for SessionConfig {
             enable_file_hooks: None,
             enable_host_git_operations: None,
             enable_session_store: None,
+            enable_github_cache_store: None,
             enable_skills: None,
             skill_provider: None,
             embedding_cache_storage: None,
@@ -2850,6 +2857,7 @@ impl SessionConfig {
             enable_file_hooks: self.enable_file_hooks,
             enable_host_git_operations: self.enable_host_git_operations,
             enable_session_store: self.enable_session_store,
+            enable_github_cache_store: self.enable_github_cache_store,
             enable_skills: self.enable_skills,
             has_skill_provider: has_skill_provider.then_some(true),
             request_user_input,
@@ -3280,6 +3288,12 @@ impl SessionConfig {
     /// Set [`Self::enable_session_store`].
     pub fn with_enable_session_store(mut self, value: bool) -> Self {
         self.enable_session_store = Some(value);
+        self
+    }
+
+    /// Set [`Self::enable_github_cache_store`].
+    pub fn with_enable_github_cache_store(mut self, value: bool) -> Self {
+        self.enable_github_cache_store = Some(value);
         self
     }
 
@@ -3776,6 +3790,11 @@ pub struct ResumeSessionConfig {
     pub enable_host_git_operations: Option<bool>,
     /// When true, enables the session store on resume.
     pub enable_session_store: Option<bool>,
+    /// When true, requests the read-only GitHub cache store on resume.
+    ///
+    /// The runtime registers `github_sql` only when its `GITHUB_CACHE_STORE`
+    /// feature flag is enabled. Defaults to disabled.
+    pub enable_github_cache_store: Option<bool>,
     /// When true, enables skills on resume.
     pub enable_skills: Option<bool>,
     /// **Experimental.** Supplies session-scoped skills from the SDK host.
@@ -4048,6 +4067,7 @@ impl std::fmt::Debug for ResumeSessionConfig {
                 &self.enable_host_git_operations,
             )
             .field("enable_session_store", &self.enable_session_store)
+            .field("enable_github_cache_store", &self.enable_github_cache_store)
             .field("enable_skills", &self.enable_skills)
             .field(
                 "skill_provider",
@@ -4222,6 +4242,7 @@ impl ResumeSessionConfig {
             enable_file_hooks: self.enable_file_hooks,
             enable_host_git_operations: self.enable_host_git_operations,
             enable_session_store: self.enable_session_store,
+            enable_github_cache_store: self.enable_github_cache_store,
             enable_skills: self.enable_skills,
             has_skill_provider: has_skill_provider.then_some(true),
             request_user_input,
@@ -4339,6 +4360,7 @@ impl ResumeSessionConfig {
             enable_file_hooks: None,
             enable_host_git_operations: None,
             enable_session_store: None,
+            enable_github_cache_store: None,
             enable_skills: None,
             skill_provider: None,
             embedding_cache_storage: None,
@@ -4736,6 +4758,12 @@ impl ResumeSessionConfig {
     /// Set [`Self::enable_session_store`].
     pub fn with_enable_session_store(mut self, value: bool) -> Self {
         self.enable_session_store = Some(value);
+        self
+    }
+
+    /// Set [`Self::enable_github_cache_store`].
+    pub fn with_enable_github_cache_store(mut self, value: bool) -> Self {
+        self.enable_github_cache_store = Some(value);
         self
     }
 

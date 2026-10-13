@@ -326,8 +326,7 @@ describe("Session tasks RPC and pending handlers", async () => {
         }
     });
 
-    // Shell IDs count up per runtime process, so each attached-shell test owns its
-    // client: the recorded `shellId: 0` then holds regardless of test order.
+    // Each attached-shell test owns its client; replay normalizes process-global shell IDs.
     async function withRunningAttachedShell(
         run: (
             session: CopilotSession,

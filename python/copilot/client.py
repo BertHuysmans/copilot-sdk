@@ -2405,6 +2405,7 @@ class CopilotClient:
         enable_file_hooks: bool | None = None,
         enable_host_git_operations: bool | None = None,
         enable_session_store: bool | None = None,
+        enable_github_cache_store: bool | None = None,
         enable_skills: bool | None = None,
         included_builtin_skills: list[str] | None = None,
         skill_directories: list[str] | None = None,
@@ -2568,6 +2569,10 @@ class CopilotClient:
                 or callback hooks.
             enable_host_git_operations: Enables git operations on the host filesystem.
             enable_session_store: Enables the cross-session store.
+            enable_github_cache_store: Requests the read-only GitHub cache store
+                (``github-cache-store`` capability). The runtime registers the
+                ``github_sql`` tool only when its ``GITHUB_CACHE_STORE`` feature flag
+                is also on. Defaults to disabled.
             enable_skills: Enables skill loading.
             skill_directories: Explicit discovery-only skill roots. No general filesystem
                 grant. Available without enable_config_discovery, subject to skill/managed
@@ -2917,6 +2922,8 @@ class CopilotClient:
             payload["enableHostGitOperations"] = enable_host_git_operations
         if enable_session_store is not None:
             payload["enableSessionStore"] = enable_session_store
+        if enable_github_cache_store is not None:
+            payload["enableGitHubCacheStore"] = enable_github_cache_store
         if enable_skills is not None:
             payload["enableSkills"] = enable_skills
         if skill_provider is not None:
@@ -3317,6 +3324,7 @@ class CopilotClient:
         enable_file_hooks: bool | None = None,
         enable_host_git_operations: bool | None = None,
         enable_session_store: bool | None = None,
+        enable_github_cache_store: bool | None = None,
         enable_skills: bool | None = None,
         included_builtin_skills: list[str] | None = None,
         skill_directories: list[str] | None = None,
@@ -3472,6 +3480,10 @@ class CopilotClient:
                 or callback hooks.
             enable_host_git_operations: Enables git operations on the host filesystem.
             enable_session_store: Enables the cross-session store.
+            enable_github_cache_store: Requests the read-only GitHub cache store
+                (``github-cache-store`` capability). The runtime registers the
+                ``github_sql`` tool only when its ``GITHUB_CACHE_STORE`` feature flag
+                is also on. Defaults to disabled.
             enable_skills: Enables skill loading.
             skill_directories: Explicit discovery-only skill roots. No general filesystem
                 grant. Available without enable_config_discovery, subject to skill/managed
@@ -3761,6 +3773,8 @@ class CopilotClient:
             payload["enableHostGitOperations"] = enable_host_git_operations
         if enable_session_store is not None:
             payload["enableSessionStore"] = enable_session_store
+        if enable_github_cache_store is not None:
+            payload["enableGitHubCacheStore"] = enable_github_cache_store
         if enable_skills is not None:
             payload["enableSkills"] = enable_skills
         if skill_provider is not None:

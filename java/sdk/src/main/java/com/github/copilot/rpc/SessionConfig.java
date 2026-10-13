@@ -105,6 +105,7 @@ public class SessionConfig {
     private Boolean enableFileHooks;
     private Boolean enableHostGitOperations;
     private Boolean enableSessionStore;
+    private Boolean enableGitHubCacheStore;
     private Boolean enableSkills;
     private SkillProvider skillProvider;
     private String embeddingCacheStorage;
@@ -1845,6 +1846,45 @@ public class SessionConfig {
     }
 
     /**
+     * Gets whether the read-only GitHub cache store is requested.
+     *
+     * @return an {@link java.util.Optional} containing {@code true} to request the
+     *         {@code github-cache-store} capability or {@code false} to decline it,
+     *         or {@link java.util.Optional#empty()} to use the default behavior
+     *         (disabled)
+     */
+    @JsonIgnore
+    public Optional<Boolean> getEnableGitHubCacheStore() {
+        return Optional.ofNullable(enableGitHubCacheStore);
+    }
+
+    /**
+     * Sets whether the read-only GitHub cache store is requested.
+     * <p>
+     * The runtime registers the {@code github_sql} tool only when its
+     * {@code GITHUB_CACHE_STORE} feature flag is also on.
+     *
+     * @param enableGitHubCacheStore
+     *            {@code true} to request the {@code github-cache-store} capability,
+     *            {@code false} to decline it
+     * @return this config instance for method chaining
+     */
+    public SessionConfig setEnableGitHubCacheStore(boolean enableGitHubCacheStore) {
+        this.enableGitHubCacheStore = enableGitHubCacheStore;
+        return this;
+    }
+
+    /**
+     * Clears the enableGitHubCacheStore setting, reverting to the default behavior.
+     *
+     * @return this instance for method chaining
+     */
+    public SessionConfig clearEnableGitHubCacheStore() {
+        this.enableGitHubCacheStore = null;
+        return this;
+    }
+
+    /**
      * Gets whether skill loading is enabled.
      *
      * @return an {@link java.util.Optional} containing {@code true} to enable skill
@@ -2539,6 +2579,7 @@ public class SessionConfig {
         copy.enableFileHooks = this.enableFileHooks;
         copy.enableHostGitOperations = this.enableHostGitOperations;
         copy.enableSessionStore = this.enableSessionStore;
+        copy.enableGitHubCacheStore = this.enableGitHubCacheStore;
         copy.enableSkills = this.enableSkills;
         copy.skillProvider = this.skillProvider;
         copy.embeddingCacheStorage = this.embeddingCacheStorage;

@@ -123,6 +123,11 @@ pub(crate) struct SessionCreateWire {
     pub enable_host_git_operations: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_session_store: Option<bool>,
+    #[serde(
+        rename = "enableGitHubCacheStore",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub enable_github_cache_store: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_skills: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -301,6 +306,11 @@ pub(crate) struct SessionResumeWire {
     pub enable_host_git_operations: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_session_store: Option<bool>,
+    #[serde(
+        rename = "enableGitHubCacheStore",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub enable_github_cache_store: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_skills: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

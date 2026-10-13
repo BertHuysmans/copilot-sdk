@@ -3168,6 +3168,14 @@ export interface SessionConfigBase {
     enableSessionStore?: boolean;
 
     /**
+     * When true, requests the read-only GitHub cache store for this session
+     * (the `github-cache-store` capability). The runtime registers the
+     * `github_sql` tool only when its `GITHUB_CACHE_STORE` feature flag is
+     * also on. Defaults to disabled.
+     */
+    enableGitHubCacheStore?: boolean;
+
+    /**
      * When true, enables skill loading (including builtin skills and discovered
      * skill directories). When false, no skills are loaded regardless of
      * `skillDirectories` or `enableConfigDiscovery` settings.

@@ -932,6 +932,7 @@ func (c *Client) CreateSession(ctx context.Context, config *SessionConfig) (*Ses
 	req.EnableFileHooks = config.EnableFileHooks
 	req.EnableHostGitOperations = config.EnableHostGitOperations
 	req.EnableSessionStore = config.EnableSessionStore
+	req.EnableGitHubCacheStore = config.EnableGitHubCacheStore
 	req.EnableSkills = config.EnableSkills
 	if config.SkillProvider != nil {
 		req.HasSkillProvider = Bool(true)
@@ -1441,6 +1442,7 @@ func (c *Client) ResumeSessionWithOptions(ctx context.Context, sessionID string,
 	req.EnableFileHooks = config.EnableFileHooks
 	req.EnableHostGitOperations = config.EnableHostGitOperations
 	req.EnableSessionStore = config.EnableSessionStore
+	req.EnableGitHubCacheStore = config.EnableGitHubCacheStore
 	req.EnableSkills = config.EnableSkills
 	if config.SkillProvider != nil {
 		req.HasSkillProvider = Bool(true)

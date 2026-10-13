@@ -7296,6 +7296,104 @@ async fn hooks_invoke_subagent_lifecycle_does_not_warn_as_unknown() {
     );
 }
 
+/// The CLI sends the `error` of the `errorOccurred` and `sessionEnd` hook
+/// inputs as an error object. Both inputs reach their hooks with the object's
+/// `message`, and no hook dispatch fails.
+#[tokio::test]
+async fn hooks_invoke_decodes_the_clis_error_objects() {
+    use github_copilot_sdk::hooks::{
+        ErrorOccurredInput, ErrorOccurredOutput, HookContext, SessionEndInput, SessionEndOutput,
+        SessionHooks,
+    };
+
+    #[derive(Default)]
+    struct Recorder {
+        errors: std::sync::Mutex<Vec<String>>,
+    }
+    #[async_trait]
+    impl SessionHooks for Recorder {
+        async fn on_error_occurred(
+            &self,
+            input: ErrorOccurredInput,
+            _ctx: HookContext,
+        ) -> Option<ErrorOccurredOutput> {
+            self.errors.lock().unwrap().push(input.error);
+            None
+        }
+
+        async fn on_session_end(
+            &self,
+            input: SessionEndInput,
+            _ctx: HookContext,
+        ) -> Option<SessionEndOutput> {
+            self.errors
+                .lock()
+                .unwrap()
+                .push(input.error.unwrap_or_default());
+            None
+        }
+    }
+
+    let hooks = Arc::new(Recorder::default());
+    let (capture, _guard) = capture_traces();
+    let (_session, mut server) = create_session_pair_with_hooks(hooks.clone()).await;
+
+    for (request_id, hook_type, input) in [
+        (
+            305,
+            "errorOccurred",
+            serde_json::json!({
+                "sessionId": server.session_id,
+                "timestamp": 1234567890,
+                "cwd": "/tmp",
+                "error": {"name": "Error", "message": "model timeout", "stack": "Error: model timeout"},
+                "errorContext": "model_call",
+                "recoverable": true
+            }),
+        ),
+        (
+            306,
+            "sessionEnd",
+            serde_json::json!({
+                "sessionId": server.session_id,
+                "timestamp": 1234567890,
+                "cwd": "/tmp",
+                "reason": "error",
+                "error": {"message": "retries exhausted"}
+            }),
+        ),
+    ] {
+        server
+            .send_request(
+                request_id,
+                "hooks.invoke",
+                serde_json::json!({
+                    "sessionId": server.session_id,
+                    "hookType": hook_type,
+                    "input": input
+                }),
+            )
+            .await;
+        let response = timeout(TIMEOUT, server.read_response()).await.unwrap();
+        assert_eq!(response["id"], request_id);
+        assert_eq!(response["result"], serde_json::json!({ "output": {} }));
+    }
+
+    assert_eq!(
+        *hooks.errors.lock().unwrap(),
+        vec!["model timeout".to_string(), "retries exhausted".to_string()]
+    );
+    let failures: Vec<_> = capture
+        .events
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|event| event.message_contains("hook dispatch failed"))
+        .cloned()
+        .collect();
+    assert!(failures.is_empty(), "hook dispatch failures: {failures:?}");
+}
+
 async fn create_session_pair_with_system_message_transforms(
     transforms: Arc<dyn github_copilot_sdk::transforms::SystemMessageTransform>,
 ) -> (github_copilot_sdk::session::Session, FakeServer) {

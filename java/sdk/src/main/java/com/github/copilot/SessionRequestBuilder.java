@@ -218,6 +218,7 @@ final class SessionRequestBuilder {
         config.getEnableFileHooks().ifPresent(request::setEnableFileHooks);
         config.getEnableHostGitOperations().ifPresent(request::setEnableHostGitOperations);
         config.getEnableSessionStore().ifPresent(request::setEnableSessionStore);
+        config.getEnableGitHubCacheStore().ifPresent(request::setEnableGitHubCacheStore);
         config.getEnableSkills().ifPresent(request::setEnableSkills);
         if (config.getSkillProvider() != null) {
             request.setHasSkillProvider(true);
@@ -342,6 +343,7 @@ final class SessionRequestBuilder {
         config.getEnableFileHooks().ifPresent(request::setEnableFileHooks);
         config.getEnableHostGitOperations().ifPresent(request::setEnableHostGitOperations);
         config.getEnableSessionStore().ifPresent(request::setEnableSessionStore);
+        config.getEnableGitHubCacheStore().ifPresent(request::setEnableGitHubCacheStore);
         config.getEnableSkills().ifPresent(request::setEnableSkills);
         if (config.getSkillProvider() != null) {
             request.setHasSkillProvider(true);

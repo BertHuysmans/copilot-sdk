@@ -1,6 +1,7 @@
 package copilot
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -920,17 +921,24 @@ func (h SessionEndHookInput) MarshalJSON() ([]byte, error) {
 	}{Timestamp: h.Timestamp.UnixMilli(), alias: alias(h)})
 }
 
-// UnmarshalJSON implements json.Unmarshaler, parsing Timestamp from Unix milliseconds.
+// UnmarshalJSON implements json.Unmarshaler, parsing Timestamp from Unix milliseconds
+// and Error from the CLI's error object (see hookErrorText).
 func (h *SessionEndHookInput) UnmarshalJSON(data []byte) error {
 	type alias SessionEndHookInput
 	aux := &struct {
-		Timestamp int64 `json:"timestamp"`
+		Timestamp int64           `json:"timestamp"`
+		Error     json.RawMessage `json:"error"`
 		*alias
 	}{alias: (*alias)(h)}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
 	h.Timestamp = time.UnixMilli(aux.Timestamp)
+	errorText, err := hookErrorText(aux.Error)
+	if err != nil {
+		return err
+	}
+	h.Error = errorText
 	return nil
 }
 
@@ -963,18 +971,60 @@ func (h ErrorOccurredHookInput) MarshalJSON() ([]byte, error) {
 	}{Timestamp: h.Timestamp.UnixMilli(), alias: alias(h)})
 }
 
-// UnmarshalJSON implements json.Unmarshaler, parsing Timestamp from Unix milliseconds.
+// UnmarshalJSON implements json.Unmarshaler, parsing Timestamp from Unix milliseconds
+// and Error from the CLI's error object (see hookErrorText).
 func (h *ErrorOccurredHookInput) UnmarshalJSON(data []byte) error {
 	type alias ErrorOccurredHookInput
 	aux := &struct {
-		Timestamp int64 `json:"timestamp"`
+		Timestamp int64           `json:"timestamp"`
+		Error     json.RawMessage `json:"error"`
 		*alias
 	}{alias: (*alias)(h)}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
 	h.Timestamp = time.UnixMilli(aux.Timestamp)
+	errorText, err := hookErrorText(aux.Error)
+	if err != nil {
+		return err
+	}
+	h.Error = errorText
 	return nil
+}
+
+// hookErrorText decodes the error of an errorOccurred or sessionEnd hook input.
+// The CLI sends an error object ({"name", "message", "stack"} or {"message"}):
+// its message becomes the error text, and an object without a string message
+// becomes its compact JSON. A string passes through, and null or an absent
+// error leaves the text empty.
+func hookErrorText(raw json.RawMessage) (string, error) {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return "", nil
+	}
+	if raw[0] == '{' {
+		var object map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &object); err != nil {
+			return "", err
+		}
+		if message := bytes.TrimSpace(object["message"]); len(message) > 0 && message[0] == '"' {
+			var text string
+			if err := json.Unmarshal(message, &text); err != nil {
+				return "", err
+			}
+			return text, nil
+		}
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, raw); err != nil {
+			return "", err
+		}
+		return compact.String(), nil
+	}
+	var text string
+	if err := json.Unmarshal(raw, &text); err != nil {
+		return "", err
+	}
+	return text, nil
 }
 
 // ErrorOccurredHookOutput is the output for an error-occurred hook
@@ -1536,6 +1586,11 @@ type SessionConfig struct {
 	// and retrieval. When false, session content is not written to or read from the
 	// shared session store.
 	EnableSessionStore *bool
+	// EnableGitHubCacheStore, when true, requests the read-only GitHub cache store
+	// (the github-cache-store capability). The runtime registers the github_sql
+	// tool only when its GITHUB_CACHE_STORE feature flag is also on. Defaults to
+	// disabled.
+	EnableGitHubCacheStore *bool
 	// EnableSkills, when non-nil, controls skill loading (including builtin skills
 	// and discovered skill directories). When false, no skills are loaded regardless
 	// of SkillDirectories or EnableConfigDiscovery settings.
@@ -2269,6 +2324,11 @@ type ResumeSessionConfig struct {
 	// EnableSessionStore, when non-nil, controls the cross-session store for search
 	// and retrieval across sessions.
 	EnableSessionStore *bool
+	// EnableGitHubCacheStore, when true, requests the read-only GitHub cache store
+	// (the github-cache-store capability). The runtime registers the github_sql
+	// tool only when its GITHUB_CACHE_STORE feature flag is also on. Defaults to
+	// disabled.
+	EnableGitHubCacheStore *bool
 	// EnableSkills, when non-nil, controls skill loading.
 	EnableSkills *bool
 	// Streaming enables streaming of assistant message and reasoning chunks.
@@ -2956,6 +3016,7 @@ type createSessionRequest struct {
 	EnableFileHooks                    *bool                                  `json:"enableFileHooks,omitempty"`
 	EnableHostGitOperations            *bool                                  `json:"enableHostGitOperations,omitempty"`
 	EnableSessionStore                 *bool                                  `json:"enableSessionStore,omitempty"`
+	EnableGitHubCacheStore             *bool                                  `json:"enableGitHubCacheStore,omitempty"`
 	EnableSkills                       *bool                                  `json:"enableSkills,omitempty"`
 	HasSkillProvider                   *bool                                  `json:"hasSkillProvider,omitempty"`
 	SkillDirectories                   []string                               `json:"skillDirectories,omitzero"`
@@ -3051,6 +3112,7 @@ type resumeSessionRequest struct {
 	EnableFileHooks                    *bool                                  `json:"enableFileHooks,omitempty"`
 	EnableHostGitOperations            *bool                                  `json:"enableHostGitOperations,omitempty"`
 	EnableSessionStore                 *bool                                  `json:"enableSessionStore,omitempty"`
+	EnableGitHubCacheStore             *bool                                  `json:"enableGitHubCacheStore,omitempty"`
 	EnableSkills                       *bool                                  `json:"enableSkills,omitempty"`
 	HasSkillProvider                   *bool                                  `json:"hasSkillProvider,omitempty"`
 	DisableResume                      *bool                                  `json:"disableResume,omitempty"`

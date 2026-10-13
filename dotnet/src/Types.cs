@@ -1963,6 +1963,7 @@ public sealed class SessionEndHookInput
     /// Error message if the session ended due to an error.
     /// </summary>
     [JsonPropertyName("error")]
+    [JsonConverter(typeof(HookErrorTextConverter))]
     public string? Error { get; set; }
 }
 
@@ -2018,6 +2019,7 @@ public sealed class ErrorOccurredHookInput
     /// Error message describing what went wrong.
     /// </summary>
     [JsonPropertyName("error")]
+    [JsonConverter(typeof(HookErrorTextConverter))]
     public string Error { get; set; } = string.Empty;
 
     /// <summary>
@@ -3629,6 +3631,7 @@ public abstract class SessionConfigBase
         EnableFileHooks = other.EnableFileHooks;
         EnableHostGitOperations = other.EnableHostGitOperations;
         EnableSessionStore = other.EnableSessionStore;
+        EnableGitHubCacheStore = other.EnableGitHubCacheStore;
         EnableSkills = other.EnableSkills;
         EnableMcpApps = other.EnableMcpApps;
         GitHubMcpToolConfig = other.GitHubMcpToolConfig is null
@@ -3831,6 +3834,14 @@ public abstract class SessionConfigBase
     /// not written to or read from the shared session store.
     /// </summary>
     public bool? EnableSessionStore { get; set; }
+
+    /// <summary>
+    /// When <see langword="true"/>, requests the read-only GitHub cache store
+    /// (the <c>github-cache-store</c> capability). The runtime registers the
+    /// <c>github_sql</c> tool only when its <c>GITHUB_CACHE_STORE</c> feature flag
+    /// is also on. Defaults to disabled.
+    /// </summary>
+    public bool? EnableGitHubCacheStore { get; set; }
 
     /// <summary>
     /// When <see langword="true"/>, enables skill loading, including built-in
