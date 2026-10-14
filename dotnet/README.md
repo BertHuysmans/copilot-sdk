@@ -235,6 +235,7 @@ Create a new conversation session.
 - `OnPermissionRequest` - Optional handler called before each tool execution to approve or deny it. When omitted, permission requests are emitted as events and left pending for manual resolution. `PermissionHandler.ApproveAll` approves requests when managed settings are disabled and throws when `EnableManagedSettings` is true. Custom handlers can inspect `ManagedApprovalRequired` for human-facing confirmation logic. See [Permission Handling](#permission-handling) section.
 - `OnUserInputRequest` - Handler for legacy question-and-answer requests from the agent. Enables the legacy `ask_user` tool. See [User Input Requests](#user-input-requests) section.
 - `AskUserVariant` - Selects the model-facing `ask_user` tool shape. Defaults to `AskUserVariant.Legacy`; use `AskUserVariant.Elicitation` with `OnElicitationRequest`.
+- `InteractiveUser` - Declares that a person types this session's messages, as in an editor chat panel. Enables the runtime's user-message analysis telemetry for user-authored messages; automated messages stay excluded. Defaults to off. Ignored for cloud sessions.
 - `Hooks` - Hook handlers for session lifecycle events. See [Session Hooks](#session-hooks) section.
 - `CanvasHandler` - Handles canvas open, close, and action callbacks. The SDK awaits
   asynchronous callbacks before replying, including callbacks without a result, unless
@@ -252,6 +253,7 @@ Resume an existing session. Returns the session with `WorkspacePath` populated i
 - `GitHubTokenProvider` - Replaces the session-scoped token provider when resuming. Cannot be combined with `GitHubToken`.
 - `SkillProvider` - Re-supplies the session-scoped skill provider when resuming.
 - `AskUserVariant` - Re-supplies the model-facing `ask_user` tool shape on cold resume.
+- `InteractiveUser` - Re-supplies the interactive-user declaration on cold resume. It is ignored when resuming a session that is already active.
 - `AllowTranscriptRecovery` - Repairs a damaged transcript when true. The default
   is true in all modes; set false to reject recovery. `session.TranscriptRecovery` contains
   `PlannedBackupPath`, `InvalidLineNumbers` (including torn-tail loss), and

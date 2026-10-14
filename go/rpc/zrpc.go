@@ -2519,6 +2519,28 @@ type CatalogClientContract struct {
 	RequiredCapabilities []string `json:"requiredCapabilities"`
 }
 
+// An Agent Finder materialisation reference pinning one exact resource revision.
+//
+// It carries no origin or URL: the runtime always builds the descriptor URL on its fixed
+// Agent
+// Finder authority. It carries no display data either; every reviewed field comes from the
+// verified descriptor and Skill files.
+// Experimental: CatalogMaterializationReference is part of an experimental API and may
+// change or be removed.
+type CatalogMaterializationReference struct {
+	// Expected `sha256:<lowercase hex>` digest of the descriptor's bundle manifest.
+	BundleDigest string `json:"bundleDigest"`
+	// Expected `sha256:<lowercase hex>` digest of the canonical descriptor.
+	DescriptorDigest string `json:"descriptorDigest"`
+	// Agent Finder resource identifier, a positive decimal integer.
+	ResourceID string `json:"resourceId"`
+	// Agent Finder materialisation revision identifier, a positive decimal integer. This is not
+	// a Git commit.
+	RevisionID string `json:"revisionId"`
+	// Materialisation descriptor schema version, currently `1.0.0`.
+	SchemaVersion string `json:"schemaVersion"`
+}
+
 // Where and when an MCP server catalog reference was observed. Discovery provenance
 // deliberately carries no content digest because search does not establish the exact
 // validated content a later plan will bind.
@@ -18452,6 +18474,12 @@ type SessionOpenOptions struct {
 	InstructionDirectories []string `json:"instructionDirectories,omitzero"`
 	// Stable integration identifier for analytics.
 	IntegrationID *string `json:"integrationId,omitempty"`
+	// Declares that a human drives this session's conversation, enabling user-message analysis
+	// (sentiment, task completion criteria, and task analytics) for user-authored messages.
+	// Automated messages remain excluded. Defaults to false for SDK sessions. Applied when the
+	// session is created or loaded from storage; ignored when resuming a session that is
+	// already active, and for cloud sessions.
+	InteractiveUser *bool `json:"interactiveUser,omitempty"`
 	// Whether experimental behavior is enabled.
 	IsExperimentalMode *bool `json:"isExperimentalMode,omitempty"`
 	// Whether interactive shell sessions are logged.
@@ -21059,6 +21087,20 @@ type SkillInstallPlan struct {
 type SkillList struct {
 	// Available skills
 	Skills []Skill `json:"skills"`
+}
+
+// Side-effect-free planning of one Skill from a materialisation reference rather than a
+// search candidate.
+// Experimental: SkillPlanInstallFromReferenceRequest is part of an experimental API and may
+// change or be removed.
+type SkillPlanInstallFromReferenceRequest struct {
+	// Required authenticated bound catalogue, skill-confirmed-installation and
+	// skill-reference-installation capabilities.
+	Contract CatalogClientContract `json:"contract"`
+	// Existing local session attached to this connection.
+	PolicySessionID string `json:"policySessionId"`
+	// Materialisation reference to verify and plan.
+	Reference CatalogMaterializationReference `json:"reference"`
 }
 
 // Side-effect-free planning of one verified Agent Finder Skill candidate.
@@ -25798,6 +25840,11 @@ const (
 	// installation engine linked; acquisition may still be refused as feature-disabled per
 	// selected session.
 	CatalogCapabilitySkillConfirmedInstallation CatalogCapability = "skill-confirmed-installation"
+	// Extends skill-confirmed-installation to planning from an Agent Finder materialisation
+	// reference through skills.planInstallFromReference, and to its distinct reference failure
+	// reasons. Requires skill-confirmed-installation. Advertised only by runtimes with the
+	// Skill installation engine linked.
+	CatalogCapabilitySkillReferenceInstallation CatalogCapability = "skill-reference-installation"
 	// Understands versioned candidate trust snapshots. Protocol-3 callers must require this
 	// capability before the runtime adds the optional snapshot field.
 	CatalogCapabilityTrustSnapshot CatalogCapability = "trust-snapshot"
@@ -29941,8 +29988,17 @@ const (
 	SkillInstallationFailureReasonConfirmationUnavailable SkillInstallationFailureReason = "confirmation-unavailable"
 	// The verified Skill descriptor failed validation.
 	SkillInstallationFailureReasonDescriptorInvalid SkillInstallationFailureReason = "descriptor-invalid"
+	// Agent Finder has no materialisation for the referenced resource revision (HTTP 404).
+	// Returned only to callers that require skill-reference-installation.
+	SkillInstallationFailureReasonDescriptorNotFound SkillInstallationFailureReason = "descriptor-not-found"
 	// The verified Skill descriptor could not be retrieved safely.
 	SkillInstallationFailureReasonDescriptorUnavailable SkillInstallationFailureReason = "descriptor-unavailable"
+	// Agent Finder withdrew the referenced resource revision (HTTP 410). Returned only to
+	// callers that require skill-reference-installation.
+	SkillInstallationFailureReasonDescriptorWithdrawn SkillInstallationFailureReason = "descriptor-withdrawn"
+	// The retrieved descriptor does not match the referenced descriptor or bundle digest.
+	// Returned only to callers that require skill-reference-installation.
+	SkillInstallationFailureReasonDigestMismatch SkillInstallationFailureReason = "digest-mismatch"
 	// The Skill entrypoint could not be retrieved or verified.
 	SkillInstallationFailureReasonEntrypointUnavailable SkillInstallationFailureReason = "entrypoint-unavailable"
 	// The handle or operation expired.
@@ -29954,6 +30010,9 @@ const (
 	SkillInstallationFailureReasonForeignRuntime SkillInstallationFailureReason = "foreign-runtime"
 	// The candidate handle is not a verified installable Skill candidate.
 	SkillInstallationFailureReasonInvalidCandidate SkillInstallationFailureReason = "invalid-candidate"
+	// The materialisation reference is malformed or uses an unsupported schema version.
+	// Returned only to callers that require skill-reference-installation.
+	SkillInstallationFailureReasonInvalidReference SkillInstallationFailureReason = "invalid-reference"
 	// The request is unsupported or malformed.
 	SkillInstallationFailureReasonInvalidRequest SkillInstallationFailureReason = "invalid-request"
 	// The Skill entrypoint is not a valid Skill.
@@ -29984,6 +30043,9 @@ const (
 	SkillInstallationFailureReasonSearchMismatch SkillInstallationFailureReason = "search-mismatch"
 	// The retained Skill source changed after planning.
 	SkillInstallationFailureReasonSourceChanged SkillInstallationFailureReason = "source-changed"
+	// The referenced resource is not a Skill. Returned only to callers that require
+	// skill-reference-installation.
+	SkillInstallationFailureReasonUnsupportedResource SkillInstallationFailureReason = "unsupported-resource"
 	// A storage operation failed; inspect durable state before retrying.
 	SkillInstallationFailureReasonWriteFailed SkillInstallationFailureReason = "write-failed"
 	// The handle is not the expected Skill handle kind.
@@ -33235,6 +33297,31 @@ func (a *ServerSkillsAPI) GetDiscoveryPaths(ctx context.Context, params *SkillsG
 // refusal.
 func (a *ServerSkillsAPI) PlanInstall(ctx context.Context, params *SkillPlanInstallRequest) (SkillInstallationManagementResult, error) {
 	raw, err := a.client.Request(ctx, "skills.planInstall", params)
+	if err != nil {
+		return nil, err
+	}
+	result, err := unmarshalSkillInstallationManagementResult(raw)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// PlanInstallFromReference plans installation of the Skill pinned by an Agent Finder
+// materialisation reference without writing files. The runtime retrieves the descriptor
+// only from its fixed Agent Finder authority and applies the same verification as
+// skills.planInstall; the review shows only verified data. Apply the returned plan with
+// skills.applyInstall.
+//
+// RPC method: skills.planInstallFromReference.
+//
+// Parameters: Side-effect-free planning of one Skill from a materialisation reference
+// rather than a search candidate.
+//
+// Returns: Skill installation management result with the honoured contract, or a typed
+// refusal.
+func (a *ServerSkillsAPI) PlanInstallFromReference(ctx context.Context, params *SkillPlanInstallFromReferenceRequest) (SkillInstallationManagementResult, error) {
+	raw, err := a.client.Request(ctx, "skills.planInstallFromReference", params)
 	if err != nil {
 		return nil, err
 	}

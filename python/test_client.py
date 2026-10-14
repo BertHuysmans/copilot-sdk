@@ -1343,6 +1343,7 @@ class TestCreateSessionConfig:
                 on_permission_request=PermissionHandler.approve_all,
                 enable_managed_settings=True,
                 enforce_managed_model_defaults=True,
+                interactive_user=True,
                 managed_settings=ManagedSettings(
                     permissions=ManagedSettingsPermissions(
                         disable_bypass_permissions_mode=DisableBypassPermissionsModes.ALLOW_AUTO_ONLY,
@@ -1358,6 +1359,7 @@ class TestCreateSessionConfig:
                 session.session_id,
                 on_permission_request=PermissionHandler.approve_all,
                 enforce_managed_model_defaults=True,
+                interactive_user=True,
                 managed_settings=ManagedSettings(
                     permissions=ManagedSettingsPermissions(
                         disable_bypass_permissions_mode="future-fail-closed-mode",
@@ -1371,6 +1373,8 @@ class TestCreateSessionConfig:
             assert captured["session.create"]["enableManagedSettings"] is True
             assert captured["session.create"]["enforceManagedModelDefaults"] is True
             assert captured["session.resume"]["enforceManagedModelDefaults"] is True
+            assert captured["session.create"]["interactiveUser"] is True
+            assert captured["session.resume"]["interactiveUser"] is True
             assert captured["session.create"]["managedSettings"] == {
                 "permissions": {
                     "disableBypassPermissionsMode": "allow-auto-only",
@@ -1401,6 +1405,39 @@ class TestCreateSessionConfig:
                     "disableBypassPermissionsMode": "disable",
                 }
             }
+        finally:
+            await client.force_stop()
+
+    @pytest.mark.asyncio
+    async def test_create_and_resume_session_forward_explicit_interactive_user_false(self):
+        client = CopilotClient(connection=RuntimeConnection.for_stdio(path=CLI_PATH))
+        await client.start()
+        try:
+            captured = {}
+
+            async def mock_request(method, params, **kwargs):
+                captured[method] = params
+                if method in ("session.create", "session.resume"):
+                    result = {"sessionId": params.get("sessionId") or "session-1"}
+                    callback = kwargs.get("on_response_inline")
+                    if callback is not None:
+                        callback(result)
+                    return result
+                return {}
+
+            client._client.request = mock_request
+            session = await client.create_session(
+                on_permission_request=PermissionHandler.approve_all,
+                interactive_user=False,
+            )
+            await client.resume_session(
+                session.session_id,
+                on_permission_request=PermissionHandler.approve_all,
+                interactive_user=False,
+            )
+
+            assert captured["session.create"]["interactiveUser"] is False
+            assert captured["session.resume"]["interactiveUser"] is False
         finally:
             await client.force_stop()
 
@@ -1441,6 +1478,8 @@ class TestCreateSessionConfig:
 
                 assert captured["session.create"]["isExperimentalMode"] is False
                 assert captured["session.resume"]["isExperimentalMode"] is False
+                assert "interactiveUser" not in captured["session.create"]
+                assert "interactiveUser" not in captured["session.resume"]
             finally:
                 await client.force_stop()
 
@@ -1466,6 +1505,7 @@ class TestCreateSessionConfig:
             )
 
             assert "managedSettings" not in captured["session.create"]
+            assert "interactiveUser" not in captured["session.create"]
         finally:
             await client.force_stop()
 

@@ -796,6 +796,73 @@ func TestClient_ForwardsCapiOptionsToSessionRequests(t *testing.T) {
 	}
 }
 
+func TestClient_ForwardsInteractiveUserToSessionRequests(t *testing.T) {
+	tests := []struct {
+		name  string
+		value *bool
+	}{
+		{"true", Bool(true)},
+		{"false", Bool(false)},
+		{"omitted", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rpcClient, server, _ := newRuntimeShutdownRpcPair(t)
+			t.Cleanup(server.Stop)
+			client := &Client{
+				client:   rpcClient,
+				RPC:      rpc.NewServerRPC(rpcClient),
+				sessions: make(map[string]*Session),
+			}
+
+			createParams := make(chan json.RawMessage, 1)
+			server.SetRequestHandler("session.create", func(params json.RawMessage) (json.RawMessage, *jsonrpc2.Error) {
+				createParams <- append(json.RawMessage(nil), params...)
+				sessionID := sessionIDFromParams(t, params)
+				return []byte(`{"sessionId":"` + sessionID + `","workspacePath":"/workspace"}`), nil
+			})
+
+			_, err := client.CreateSession(t.Context(), &SessionConfig{InteractiveUser: tt.value})
+			if err != nil {
+				t.Fatalf("CreateSession failed: %v", err)
+			}
+			assertOptionalBoolJSONField(t, <-createParams, "interactiveUser", tt.value)
+
+			resumeParams := make(chan json.RawMessage, 1)
+			server.SetRequestHandler("session.resume", func(params json.RawMessage) (json.RawMessage, *jsonrpc2.Error) {
+				resumeParams <- append(json.RawMessage(nil), params...)
+				return []byte(`{"sessionId":"interactive-resume","workspacePath":"/workspace"}`), nil
+			})
+
+			_, err = client.ResumeSessionWithOptions(t.Context(), "interactive-resume", &ResumeSessionConfig{InteractiveUser: tt.value})
+			if err != nil {
+				t.Fatalf("ResumeSessionWithOptions failed: %v", err)
+			}
+			assertOptionalBoolJSONField(t, <-resumeParams, "interactiveUser", tt.value)
+		})
+	}
+}
+
+func assertOptionalBoolJSONField(t *testing.T, raw json.RawMessage, field string, want *bool) {
+	t.Helper()
+
+	var params map[string]any
+	if err := json.Unmarshal(raw, &params); err != nil {
+		t.Fatal(err)
+	}
+	got, present := params[field]
+	if want == nil {
+		if present {
+			t.Fatalf("%s = %v, want omitted", field, got)
+		}
+		return
+	}
+	if got != *want {
+		t.Fatalf("%s = %v, want %v", field, got, *want)
+	}
+}
+
 func TestClient_RefreshCustomInstructionsIsCreateOnly(t *testing.T) {
 	if _, ok := reflect.TypeOf(ResumeSessionConfig{}).FieldByName("RefreshCustomInstructions"); ok {
 		t.Fatal("ResumeSessionConfig must not expose RefreshCustomInstructions")

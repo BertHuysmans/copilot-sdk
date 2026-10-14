@@ -124,6 +124,7 @@ public class ResumeSessionConfig {
     private CopilotExpAssignmentResponse expAssignments;
     private Boolean enableManagedSettings;
     private Boolean enforceManagedModelDefaults;
+    private Boolean interactiveUser;
     private Map<String, Boolean> featureFlags;
     private ManagedSettings managedSettings;
 
@@ -2355,6 +2356,27 @@ public class ResumeSessionConfig {
         return this;
     }
 
+    /** @return optional declaration that this session is human-driven */
+    @JsonIgnore
+    public Optional<Boolean> getInteractiveUser() {
+        return Optional.ofNullable(interactiveUser);
+    }
+
+    /**
+     * Re-supplies that a human drives this session so a session loaded from storage
+     * keeps the declaration. It is not persisted and is ignored if the session is
+     * already active in the runtime process.
+     *
+     * @param interactiveUser
+     *            {@code true} for interactive hosts such as editors or IDE chat
+     *            panels
+     * @return this config for method chaining
+     */
+    public ResumeSessionConfig setInteractiveUser(boolean interactiveUser) {
+        this.interactiveUser = interactiveUser;
+        return this;
+    }
+
     /** @return host-injected managed settings, or {@code null} when unset */
     public ManagedSettings getManagedSettings() {
         return managedSettings;
@@ -2473,6 +2495,7 @@ public class ResumeSessionConfig {
         copy.expAssignments = this.expAssignments;
         copy.enableManagedSettings = this.enableManagedSettings;
         copy.enforceManagedModelDefaults = this.enforceManagedModelDefaults;
+        copy.interactiveUser = this.interactiveUser;
         copy.managedSettings = this.managedSettings;
         return copy;
     }

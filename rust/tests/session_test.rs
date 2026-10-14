@@ -1646,6 +1646,7 @@ async fn create_session_omits_unset_diagnostics() {
     let request = read_framed(&mut server_read).await;
     assert_eq!(request["method"], "session.create");
     assert!(request["params"].get("diagnostics").is_none());
+    assert!(request["params"].get("interactiveUser").is_none());
 
     let session_id = requested_session_id(&request).to_string();
     server_respond_create(&mut server_write, &request, &session_id).await;
@@ -1673,6 +1674,7 @@ async fn cold_resume_session_omits_unset_diagnostics() {
     let request = read_framed(&mut server_read).await;
     assert_eq!(request["method"], "session.resume");
     assert!(request["params"].get("diagnostics").is_none());
+    assert!(request["params"].get("interactiveUser").is_none());
 
     server_respond_create(&mut server_write, &request, "diagnostics-default").await;
     respond_to_reload(&mut server_read, &mut server_write).await;
@@ -1831,6 +1833,7 @@ async fn create_and_resume_send_managed_settings_permissions() {
                 .create_session(
                     SessionConfig::default()
                         .with_enable_managed_settings(true)
+                        .with_interactive_user(true)
                         .with_managed_settings(managed),
                 )
                 .await
@@ -1841,6 +1844,7 @@ async fn create_and_resume_send_managed_settings_permissions() {
     let request = read_framed(&mut server_read).await;
     assert_eq!(request["method"], "session.create");
     assert_eq!(request["params"]["enableManagedSettings"], true);
+    assert_eq!(request["params"]["interactiveUser"], true);
     let perms = &request["params"]["managedSettings"]["permissions"];
     assert_eq!(perms["disableBypassPermissionsMode"], "allow-auto-only");
     assert_eq!(perms["disableAssistedPermissionsMode"], true);
@@ -1866,6 +1870,7 @@ async fn create_and_resume_send_managed_settings_permissions() {
             client
                 .resume_session(
                     ResumeSessionConfig::new(SessionId::from(session_id))
+                        .with_interactive_user(true)
                         .with_managed_settings(managed),
                 )
                 .await
@@ -1875,6 +1880,7 @@ async fn create_and_resume_send_managed_settings_permissions() {
 
     let request = read_framed(&mut server_read).await;
     assert_eq!(request["method"], "session.resume");
+    assert_eq!(request["params"]["interactiveUser"], true);
     assert_eq!(
         request["params"]["managedSettings"]["permissions"]["deny"][0],
         "shell(rm*)"
@@ -1894,6 +1900,51 @@ async fn create_and_resume_send_managed_settings_permissions() {
     let response = serde_json::json!({ "jsonrpc": "2.0", "id": id, "result": {} });
     write_framed(&mut server_write, &serde_json::to_vec(&response).unwrap()).await;
 
+    timeout(TIMEOUT, resume_handle).await.unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn create_and_resume_send_explicit_interactive_user_false() {
+    use github_copilot_sdk::types::ResumeSessionConfig;
+
+    let (client, mut server_read, mut server_write) = make_client();
+
+    let create_handle = tokio::spawn({
+        let client = client.clone();
+        async move {
+            client
+                .create_session(SessionConfig::default().with_interactive_user(false))
+                .await
+                .unwrap()
+        }
+    });
+
+    let request = read_framed(&mut server_read).await;
+    assert_eq!(request["method"], "session.create");
+    assert_eq!(request["params"]["interactiveUser"], false);
+    let session_id = requested_session_id(&request).to_string();
+    server_respond_create(&mut server_write, &request, &session_id).await;
+    timeout(TIMEOUT, create_handle).await.unwrap().unwrap();
+
+    let resume_handle = tokio::spawn({
+        let client = client.clone();
+        let session_id = session_id.clone();
+        async move {
+            client
+                .resume_session(
+                    ResumeSessionConfig::new(SessionId::from(session_id))
+                        .with_interactive_user(false),
+                )
+                .await
+                .unwrap()
+        }
+    });
+
+    let request = read_framed(&mut server_read).await;
+    assert_eq!(request["method"], "session.resume");
+    assert_eq!(request["params"]["interactiveUser"], false);
+    server_respond_create(&mut server_write, &request, &session_id).await;
+    respond_to_reload(&mut server_read, &mut server_write).await;
     timeout(TIMEOUT, resume_handle).await.unwrap().unwrap();
 }
 
@@ -5547,6 +5598,77 @@ async fn elicitation_requested_dispatches_to_handler_and_responds() {
     assert_eq!(rpc_call["params"]["requestId"], "elicit-1");
     assert_eq!(rpc_call["params"]["result"]["action"], "accept");
     assert_eq!(rpc_call["params"]["result"]["content"]["name"], "Alice");
+}
+
+#[tokio::test]
+async fn elicitation_requested_forwards_the_wire_schema_verbatim() {
+    use github_copilot_sdk::types::ElicitationResult;
+
+    struct CaptureHandler(std::sync::Mutex<Option<serde_json::Value>>);
+    #[async_trait]
+    impl ElicitationHandler for CaptureHandler {
+        async fn handle(
+            &self,
+            _session_id: SessionId,
+            _request_id: RequestId,
+            request: ElicitationRequest,
+        ) -> ElicitationResult {
+            *self.0.lock().unwrap() = request.requested_schema;
+            ElicitationResult {
+                action: "cancel".to_string(),
+                content: None,
+            }
+        }
+    }
+
+    let handler = Arc::new(CaptureHandler(std::sync::Mutex::new(None)));
+    let (_session, mut server) = create_session_pair_with_config({
+        let handler = handler.clone();
+        |cfg| cfg.with_elicitation_handler(handler)
+    })
+    .await;
+
+    let schema = serde_json::json!({
+        "type": "object",
+        "title": "Deploy",
+        "properties": {
+            "service": { "type": "string", "title": "Service name" },
+            "replicas": { "type": "integer", "minimum": 1 },
+            "tier": { "type": "string", "enum": ["dev", "prod"] }
+        },
+        "required": ["service"]
+    });
+    server
+        .send_event(
+            "elicitation.requested",
+            serde_json::json!({
+                "requestId": "elicit-verbatim",
+                "message": "Deploy settings",
+                "requestedSchema": schema.clone(),
+                "mode": "form",
+            }),
+        )
+        .await;
+
+    let rpc_call = timeout(TIMEOUT, server.read_request()).await.unwrap();
+    assert_eq!(rpc_call["method"], "session.ui.handlePendingElicitation");
+    let seen = handler
+        .0
+        .lock()
+        .unwrap()
+        .clone()
+        .expect("handler saw a schema");
+    assert_eq!(seen, schema);
+    // Map equality ignores order; assert the wire field order explicitly.
+    let keys = |v: &serde_json::Value| -> Vec<String> {
+        v["properties"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
+    };
+    assert_eq!(keys(&seen), ["service", "replicas", "tier"]);
 }
 
 #[tokio::test]

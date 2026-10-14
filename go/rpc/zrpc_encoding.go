@@ -7893,6 +7893,7 @@ func (r *SessionOpenOptions) UnmarshalJSON(data []byte) error {
 		InstalledPlugins                       []InstalledPlugin                                    `json:"installedPlugins,omitzero"`
 		InstructionDirectories                 []string                                             `json:"instructionDirectories,omitzero"`
 		IntegrationID                          *string                                              `json:"integrationId,omitempty"`
+		InteractiveUser                        *bool                                                `json:"interactiveUser,omitempty"`
 		IsExperimentalMode                     *bool                                                `json:"isExperimentalMode,omitempty"`
 		LogInteractiveShells                   *bool                                                `json:"logInteractiveShells,omitempty"`
 		LspClientName                          *string                                              `json:"lspClientName,omitempty"`
@@ -7984,6 +7985,7 @@ func (r *SessionOpenOptions) UnmarshalJSON(data []byte) error {
 	r.InstalledPlugins = raw.InstalledPlugins
 	r.InstructionDirectories = raw.InstructionDirectories
 	r.IntegrationID = raw.IntegrationID
+	r.InteractiveUser = raw.InteractiveUser
 	r.IsExperimentalMode = raw.IsExperimentalMode
 	r.LogInteractiveShells = raw.LogInteractiveShells
 	r.LspClientName = raw.LspClientName

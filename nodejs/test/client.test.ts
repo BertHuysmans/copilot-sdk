@@ -5557,6 +5557,44 @@ describe("managedSettings serialization", () => {
     });
 });
 
+describe("interactiveUser serialization", () => {
+    async function captureParams(
+        method: "session.create" | "session.resume",
+        config: Record<string, unknown>
+    ): Promise<any> {
+        const client = new CopilotClient();
+        await client.start();
+        onTestFinished(() => stopClient(client));
+        const spy = vi
+            .spyOn((client as any).connection!, "sendRequest")
+            .mockImplementation(async (requested: string, params: any) => {
+                if (requested === method) return { sessionId: params.sessionId };
+                throw new Error(`Unexpected method: ${requested}`);
+            });
+        if (method === "session.create") {
+            await client.createSession({ onPermissionRequest: approveAll, ...config });
+        } else {
+            await client.resumeSession("session-1", { onPermissionRequest: approveAll, ...config });
+        }
+        const call = spy.mock.calls.find(([requested]) => requested === method);
+        return call![1];
+    }
+
+    for (const method of ["session.create", "session.resume"] as const) {
+        for (const interactiveUser of [true, false]) {
+            it(`forwards interactiveUser: ${interactiveUser} on ${method}`, async () => {
+                const params = await captureParams(method, { interactiveUser });
+                expect(params.interactiveUser).toBe(interactiveUser);
+            });
+        }
+
+        it(`omits interactiveUser from ${method} when unset`, async () => {
+            const params = await captureParams(method, {});
+            expect(params.interactiveUser).toBeUndefined();
+        });
+    }
+});
+
 describe("connect handshake clientInfo", () => {
     // Drives verifyProtocolVersion() against a stubbed connection so we can
     // observe the `connect` params without spawning a runtime. `connect` maps to

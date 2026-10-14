@@ -2442,6 +2442,7 @@ class CopilotClient:
         exp_assignments: CopilotExpAssignmentResponse | None = None,
         enable_managed_settings: bool | None = None,
         enforce_managed_model_defaults: bool | None = None,
+        interactive_user: bool | None = None,
         github_mcp_tool_config: GitHubMcpToolConfig | None = None,
         managed_settings: ManagedSettings | None = None,
     ) -> CopilotSession:
@@ -2651,6 +2652,10 @@ class CopilotClient:
                 controls are enforced for this session. Conflicting model changes
                 are rejected, while overridable managed defaults remain mutable.
                 Sent on the wire as ``enforceManagedModelDefaults``.
+            interactive_user: Declares that a human drives this session's
+                conversation, enabling user-message analysis telemetry for
+                user-authored messages. Automated messages remain excluded.
+                Defaults to False for SDK sessions. Ignored for cloud sessions.
             managed_settings: Host-injected enterprise managed settings for the
                 session. Supplies managed policy directly instead of
                 self-fetching; the runtime validates it and composes it
@@ -2813,6 +2818,9 @@ class CopilotClient:
             payload["enableManagedSettings"] = enable_managed_settings
         if enforce_managed_model_defaults is not None:
             payload["enforceManagedModelDefaults"] = enforce_managed_model_defaults
+
+        if interactive_user is not None:
+            payload["interactiveUser"] = interactive_user
 
         # Host-injected managed settings (permissions-only contract)
         if managed_settings is not None:
@@ -3364,6 +3372,7 @@ class CopilotClient:
         exp_assignments: CopilotExpAssignmentResponse | None = None,
         enable_managed_settings: bool | None = None,
         enforce_managed_model_defaults: bool | None = None,
+        interactive_user: bool | None = None,
         github_mcp_tool_config: GitHubMcpToolConfig | None = None,
         managed_settings: ManagedSettings | None = None,
     ) -> CopilotSession:
@@ -3568,6 +3577,10 @@ class CopilotClient:
                 controls are enforced after resume. Conflicting model changes are
                 rejected, while overridable managed defaults remain mutable. Sent
                 on the wire as ``enforceManagedModelDefaults``.
+            interactive_user: Re-supplies that a human drives this session so a
+                session loaded from storage keeps the declaration. It is not
+                persisted and is ignored if the session is already active in the
+                runtime process.
             managed_settings: Host-injected enterprise managed settings for the
                 session. Must be re-supplied on resume; it replaces the prior
                 injected layer, and omitting it clears that layer so warm and
@@ -3748,6 +3761,9 @@ class CopilotClient:
             payload["enableManagedSettings"] = enable_managed_settings
         if enforce_managed_model_defaults is not None:
             payload["enforceManagedModelDefaults"] = enforce_managed_model_defaults
+
+        if interactive_user is not None:
+            payload["interactiveUser"] = interactive_user
 
         # Host-injected managed settings (permissions-only contract)
         if managed_settings is not None:

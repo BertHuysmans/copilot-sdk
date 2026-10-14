@@ -280,6 +280,10 @@ public final class CreateSessionRequest {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Boolean enforceManagedModelDefaults;
 
+    @JsonProperty("interactiveUser")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean interactiveUser;
+
     @JsonProperty("managedSettings")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private ManagedSettings managedSettings;
@@ -1341,6 +1345,24 @@ public final class CreateSessionRequest {
     /** Clears managed model lock enforcement. */
     public void clearEnforceManagedModelDefaults() {
         this.enforceManagedModelDefaults = null;
+    }
+
+    /** @return whether this session is human-driven, or {@code null} when unset */
+    public Boolean getInteractiveUser() {
+        return interactiveUser;
+    }
+
+    /**
+     * @param interactiveUser
+     *            whether a human drives this session
+     */
+    public void setInteractiveUser(boolean interactiveUser) {
+        this.interactiveUser = interactiveUser;
+    }
+
+    /** Clears the interactiveUser setting, reverting to the default behavior. */
+    public void clearInteractiveUser() {
+        this.interactiveUser = null;
     }
 
     /** @return host-injected managed settings, or {@code null} when unset */

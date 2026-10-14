@@ -7573,6 +7573,54 @@ internal sealed class SkillPlanInstallRequest
     public string PolicySessionId { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// An Agent Finder materialisation reference pinning one exact resource revision.
+/// 
+/// It carries no origin or URL: the runtime always builds the descriptor URL on its fixed Agent
+/// Finder authority. It carries no display data either; every reviewed field comes from the
+/// verified descriptor and Skill files.
+/// </summary>
+[Experimental(global::GitHub.Copilot.Diagnostics.Experimental)]
+public sealed class CatalogMaterializationReference
+{
+    /// <summary>Expected `sha256:&lt;lowercase hex&gt;` digest of the descriptor's bundle manifest.</summary>
+    [JsonPropertyName("bundleDigest")]
+    public string BundleDigest { get; set; } = string.Empty;
+
+    /// <summary>Expected `sha256:&lt;lowercase hex&gt;` digest of the canonical descriptor.</summary>
+    [JsonPropertyName("descriptorDigest")]
+    public string DescriptorDigest { get; set; } = string.Empty;
+
+    /// <summary>Agent Finder resource identifier, a positive decimal integer.</summary>
+    [JsonPropertyName("resourceId")]
+    public string ResourceId { get; set; } = string.Empty;
+
+    /// <summary>Agent Finder materialisation revision identifier, a positive decimal integer. This is not a Git commit.</summary>
+    [JsonPropertyName("revisionId")]
+    public string RevisionId { get; set; } = string.Empty;
+
+    /// <summary>Materialisation descriptor schema version, currently `1.0.0`.</summary>
+    [JsonPropertyName("schemaVersion")]
+    public string SchemaVersion { get; set; } = string.Empty;
+}
+
+/// <summary>Side-effect-free planning of one Skill from a materialisation reference rather than a search candidate.</summary>
+[Experimental(global::GitHub.Copilot.Diagnostics.Experimental)]
+internal sealed class SkillPlanInstallFromReferenceRequest
+{
+    /// <summary>Required authenticated bound catalogue, skill-confirmed-installation and skill-reference-installation capabilities.</summary>
+    [JsonPropertyName("contract")]
+    public CatalogClientContract Contract { get => field ??= new(); set; }
+
+    /// <summary>Existing local session attached to this connection.</summary>
+    [JsonPropertyName("policySessionId")]
+    public string PolicySessionId { get; set; } = string.Empty;
+
+    /// <summary>Materialisation reference to verify and plan.</summary>
+    [JsonPropertyName("reference")]
+    public CatalogMaterializationReference Reference { get => field ??= new(); set; }
+}
+
 /// <summary>Skill installation result with the honoured contract, or a typed request/negotiation refusal.</summary>
 /// <remarks>Polymorphic base type discriminated by <c>kind</c>.</remarks>
 [Experimental(global::GitHub.Copilot.Diagnostics.Experimental)]
@@ -32352,6 +32400,9 @@ public readonly struct CatalogCapability : IEquatable<CatalogCapability>
     /// <summary>Understands `installability` and the reviewable `installPlan` on Agent Plugin candidates. Requires agent-plugin-discovery; without it, plugin candidates are unchanged. A plugin is installable only with complete, verified catalogue install data, and may still be reported as feature-disabled per selected session.</summary>
     public static CatalogCapability AgentPluginConfirmedInstallation { get; } = new("agent-plugin-confirmed-installation");
 
+    /// <summary>Extends skill-confirmed-installation to planning from an Agent Finder materialisation reference through skills.planInstallFromReference, and to its distinct reference failure reasons. Requires skill-confirmed-installation. Advertised only by runtimes with the Skill installation engine linked.</summary>
+    public static CatalogCapability SkillReferenceInstallation { get; } = new("skill-reference-installation");
+
     /// <summary>Returns a value indicating whether two <see cref="CatalogCapability"/> instances are equivalent.</summary>
     public static bool operator ==(CatalogCapability left, CatalogCapability right) => left.Equals(right);
 
@@ -35273,6 +35324,21 @@ public readonly struct SkillInstallationFailureReason : IEquatable<SkillInstalla
 
     /// <summary>A storage operation failed; inspect durable state before retrying.</summary>
     public static SkillInstallationFailureReason WriteFailed { get; } = new("write-failed");
+
+    /// <summary>The materialisation reference is malformed or uses an unsupported schema version. Returned only to callers that require skill-reference-installation.</summary>
+    public static SkillInstallationFailureReason InvalidReference { get; } = new("invalid-reference");
+
+    /// <summary>Agent Finder has no materialisation for the referenced resource revision (HTTP 404). Returned only to callers that require skill-reference-installation.</summary>
+    public static SkillInstallationFailureReason DescriptorNotFound { get; } = new("descriptor-not-found");
+
+    /// <summary>Agent Finder withdrew the referenced resource revision (HTTP 410). Returned only to callers that require skill-reference-installation.</summary>
+    public static SkillInstallationFailureReason DescriptorWithdrawn { get; } = new("descriptor-withdrawn");
+
+    /// <summary>The retrieved descriptor does not match the referenced descriptor or bundle digest. Returned only to callers that require skill-reference-installation.</summary>
+    public static SkillInstallationFailureReason DigestMismatch { get; } = new("digest-mismatch");
+
+    /// <summary>The referenced resource is not a Skill. Returned only to callers that require skill-reference-installation.</summary>
+    public static SkillInstallationFailureReason UnsupportedResource { get; } = new("unsupported-resource");
 
     /// <summary>Returns a value indicating whether two <see cref="SkillInstallationFailureReason"/> instances are equivalent.</summary>
     public static bool operator ==(SkillInstallationFailureReason left, SkillInstallationFailureReason right) => left.Equals(right);
@@ -49277,6 +49343,22 @@ public sealed class ServerSkillsApi
         return await CopilotClient.InvokeRpcAsync<SkillInstallationManagementResult>(_rpc, "skills.planInstall", [request], cancellationToken);
     }
 
+    /// <summary>Plans installation of the Skill pinned by an Agent Finder materialisation reference without writing files. The runtime retrieves the descriptor only from its fixed Agent Finder authority and applies the same verification as skills.planInstall; the review shows only verified data. Apply the returned plan with skills.applyInstall.</summary>
+    /// <param name="contract">Required authenticated bound catalogue, skill-confirmed-installation and skill-reference-installation capabilities.</param>
+    /// <param name="reference">Materialisation reference to verify and plan.</param>
+    /// <param name="policySessionId">Existing local session attached to this connection.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
+    /// <returns>Skill installation management result with the honoured contract, or a typed refusal.</returns>
+    public async Task<SkillInstallationManagementResult> PlanInstallFromReferenceAsync(CatalogClientContract contract, CatalogMaterializationReference reference, string policySessionId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(reference);
+        ArgumentNullException.ThrowIfNull(policySessionId);
+
+        var request = new SkillPlanInstallFromReferenceRequest { Contract = contract, Reference = reference, PolicySessionId = policySessionId };
+        return await CopilotClient.InvokeRpcAsync<SkillInstallationManagementResult>(_rpc, "skills.planInstallFromReference", [request], cancellationToken);
+    }
+
     /// <summary>Consumes one verified Skill installation plan, requests explicit human consent through installations.confirm on the original connection, then revalidates and installs the Skill disabled.</summary>
     /// <param name="contract">Required authenticated bound catalogue and Skill installation capabilities.</param>
     /// <param name="planHandle">Opaque original plan, consumed once.</param>
@@ -57377,6 +57459,7 @@ internal static class ClientGlobalApiRegistration
 [JsonSerializable(typeof(CatalogCandidate))]
 [JsonSerializable(typeof(CatalogCandidateSource))]
 [JsonSerializable(typeof(CatalogClientContract))]
+[JsonSerializable(typeof(CatalogMaterializationReference))]
 [JsonSerializable(typeof(CatalogMcpServerCandidateProvenance))]
 [JsonSerializable(typeof(CatalogNegotiatedContract))]
 [JsonSerializable(typeof(CatalogPluginRepositorySource))]
@@ -58399,6 +58482,7 @@ internal static class ClientGlobalApiRegistration
 [JsonSerializable(typeof(SkillInstallationSummary))]
 [JsonSerializable(typeof(SkillInstallationsRequest))]
 [JsonSerializable(typeof(SkillList))]
+[JsonSerializable(typeof(SkillPlanInstallFromReferenceRequest))]
 [JsonSerializable(typeof(SkillPlanInstallRequest))]
 [JsonSerializable(typeof(SkillPlanUninstallRequest))]
 [JsonSerializable(typeof(SkillSetEnabledRequest))]

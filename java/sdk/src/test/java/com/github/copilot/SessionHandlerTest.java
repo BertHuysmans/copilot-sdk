@@ -49,6 +49,75 @@ public class SessionHandlerTest {
 
     private CopilotSession session;
 
+    @Test
+    void typedHookDispatchRetainsChildIdentityAndOldRootInputs() throws Exception {
+        var captured = new ArrayList<Object>();
+        var hooks = new SessionHooks().setOnPreToolUse((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnPreMcpToolCall((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnPostToolUse((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnPostToolUseFailure((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnUserPromptSubmitted((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnUserPromptTransformed((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnSessionStart((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnSessionEnd((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnAgentStop((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnSubagentStart((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        }).setOnSubagentStop((i, c) -> {
+            captured.add(i);
+            return CompletableFuture.completedFuture(null);
+        });
+        session.registerHooks(hooks);
+        for (String hook : List.of("preToolUse", "preMcpToolCall", "postToolUse", "postToolUseFailure",
+                "userPromptSubmitted", "userPromptTransformed", "sessionStart", "sessionEnd", "agentStop",
+                "subagentStart", "subagentStop")) {
+            for (boolean enriched : List.of(true, false)) {
+                var input = MAPPER.createObjectNode().put("sessionId", "reported-session").put("timestamp", 1)
+                        .put("cwd", "work");
+                if (enriched) {
+                    input.put("agentId", "child-actor").put("agentType", "explore").put("parentAgentId",
+                            "parent-actor");
+                }
+                if (hook.equals("sessionEnd")) {
+                    input.putObject("error").put("message", "session-end-error");
+                }
+                captured.clear();
+                session.handleHooksInvoke(hook, input).get();
+                assertEquals(1, captured.size(), hook);
+                JsonNode actual = MAPPER.valueToTree(captured.get(0));
+                assertEquals("reported-session", actual.path("sessionId").asText(), hook);
+                if (hook.equals("sessionEnd")) {
+                    assertEquals("session-end-error", actual.path("error").asText(), actual.toString());
+                }
+                for (var field : Map
+                        .of("agentId", "child-actor", "agentType", "explore", "parentAgentId", "parent-actor")
+                        .entrySet()) {
+                    assertEquals(enriched ? field.getValue() : "", actual.path(field.getKey()).asText(""),
+                            hook + ": " + actual);
+                }
+            }
+        }
+    }
+
     @BeforeEach
     void setup() throws Exception {
         var constructor = CopilotSession.class.getDeclaredConstructor(String.class, JsonRpcClient.class, String.class);

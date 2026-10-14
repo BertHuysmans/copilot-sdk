@@ -289,6 +289,12 @@ Pass `new ResumeSessionConfig().setContinuePendingWork(true)` to
 instead. Leave the option unset to use the runtime default. Re-register any
 external tools needed to handle continued work.
 
+`SessionConfig.setInteractiveUser(true)` declares that a person types the
+session's messages, as in an editor chat panel. This enables the runtime's
+user-message analysis telemetry for user-authored messages. Automated messages
+stay excluded. The default is off, and cloud sessions ignore it. Re-supply it
+through `ResumeSessionConfig` on a cold resume.
+
 For rotating per-session GitHub credentials, use
 `SessionConfig.setGitHubTokenProvider(...)` (or the equivalent
 `ResumeSessionConfig` setter) instead of `setGitHubToken(...)`:

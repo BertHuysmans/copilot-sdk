@@ -21,6 +21,38 @@ pub struct HookContext {
     pub session_id: SessionId,
 }
 
+/// Runtime-provided actor metadata for a hook invocation.
+///
+/// Available through [`SessionHooks::on_hook_with_actor`] without changing
+/// legacy hook input structs or their construction patterns.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HookActor {
+    #[serde(default)]
+    agent_id: Option<String>,
+    #[serde(default)]
+    agent_type: Option<String>,
+    #[serde(default)]
+    parent_agent_id: Option<String>,
+}
+
+impl HookActor {
+    /// Subagent actor ID, absent for root hooks and older runtimes.
+    pub fn agent_id(&self) -> Option<&str> {
+        self.agent_id.as_deref()
+    }
+
+    /// Subagent type, when supplied by the runtime.
+    pub fn agent_type(&self) -> Option<&str> {
+        self.agent_type.as_deref()
+    }
+
+    /// Immediate parent actor ID, when supplied by the runtime.
+    pub fn parent_agent_id(&self) -> Option<&str> {
+        self.parent_agent_id.as_deref()
+    }
+}
+
 /// Input for the `preToolUse` hook — received before a tool executes.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -655,6 +687,14 @@ impl HookOutput {
 /// sets automatically).
 #[async_trait]
 pub trait SessionHooks: Send + Sync + 'static {
+    /// Receives typed hook input and runtime-provided actor metadata.
+    ///
+    /// The default delegates to [`Self::on_hook`], preserving existing
+    /// whole-event and per-hook implementations.
+    async fn on_hook_with_actor(&self, event: HookEvent, _actor: HookActor) -> HookOutput {
+        self.on_hook(event).await
+    }
+
     /// Top-level dispatch. The default implementation fans out to the
     /// per-hook methods below; override this only if you want a single
     /// matching point across all hook types.
@@ -861,6 +901,7 @@ pub(crate) async fn dispatch_hook(
     let ctx = HookContext {
         session_id: session_id.clone(),
     };
+    let actor_input = raw_input.clone();
 
     let event = match hook_type {
         "preToolUse" => {
@@ -922,7 +963,8 @@ pub(crate) async fn dispatch_hook(
     };
 
     let dispatch_start = Instant::now();
-    let output = hooks.on_hook(event).await;
+    let actor = serde_json::from_value(actor_input)?;
+    let output = hooks.on_hook_with_actor(event, actor).await;
     tracing::debug!(
         elapsed_ms = dispatch_start.elapsed().as_millis(),
         session_id = %session_id,

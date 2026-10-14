@@ -226,6 +226,8 @@ pub(crate) struct SessionCreateWire {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enforce_managed_model_defaults: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub interactive_user: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_experimental_mode: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub managed_settings: Option<crate::types::ManagedSettings>,
@@ -413,6 +415,8 @@ pub(crate) struct SessionResumeWire {
     pub enable_managed_settings: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enforce_managed_model_defaults: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interactive_user: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_experimental_mode: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

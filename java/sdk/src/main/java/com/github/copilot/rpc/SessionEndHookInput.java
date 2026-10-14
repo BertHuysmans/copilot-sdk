@@ -37,12 +37,27 @@ import com.fasterxml.jackson.databind.deser.std.StringDeserializer;
  *            the error message, or {@code null}; the CLI sends an error object,
  *            whose {@code message} this is
  * @since 1.0.7
+ * @param agentId
+ *            optional subagent identity, absent for root hooks and older
+ *            runtimes
+ * @param agentType
+ *            optional subagent identity, absent for root hooks and older
+ *            runtimes
+ * @param parentAgentId
+ *            optional subagent identity, absent for root hooks and older
+ *            runtimes
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SessionEndHookInput(@JsonProperty("sessionId") String sessionId,
         @JsonProperty("timestamp") long timestamp, @JsonProperty("cwd") String cwd,
         @JsonProperty("reason") String reason, @JsonProperty("finalMessage") String finalMessage,
-        @JsonProperty("error") @JsonDeserialize(using = HookErrorTextDeserializer.class) String error) {
+        @JsonProperty("error") @JsonDeserialize(using = HookErrorTextDeserializer.class) String error,
+        @JsonProperty("agentId") String agentId, @JsonProperty("agentType") String agentType,
+        @JsonProperty("parentAgentId") String parentAgentId) {
+    public SessionEndHookInput(String sessionId, long timestamp, String cwd, String reason, String finalMessage,
+            String error) {
+        this(sessionId, timestamp, cwd, reason, finalMessage, error, null, null, null);
+    }
 
     /**
      * Reads the CLI's error object ({@code {"message"}}) as its message, and an

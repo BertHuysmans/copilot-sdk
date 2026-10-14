@@ -646,6 +646,9 @@ type AutoModeSwitchRequestHandler func(request AutoModeSwitchRequest, invocation
 
 // PreToolUseHookInput is the input for a pre-tool-use hook
 type PreToolUseHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -690,6 +693,9 @@ type PreToolUseHandler func(input PreToolUseHookInput, invocation HookInvocation
 
 // PostToolUseHookInput is the input for a post-tool-use hook
 type PostToolUseHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -737,6 +743,9 @@ type PostToolUseHandler func(input PostToolUseHookInput, invocation HookInvocati
 // the failure message from the tool result and passes it as the Error field
 // (rather than passing the full result object).
 type PostToolUseFailureHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -782,6 +791,9 @@ type PostToolUseFailureHandler func(input PostToolUseFailureHookInput, invocatio
 
 // UserPromptSubmittedHookInput is the input for a user-prompt-submitted hook
 type UserPromptSubmittedHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -823,6 +835,9 @@ type UserPromptSubmittedHandler func(input UserPromptSubmittedHookInput, invocat
 
 // UserPromptTransformedHookInput is the input for a user-prompt-transformed hook.
 type UserPromptTransformedHookInput struct {
+	AgentID           string    `json:"agentId,omitempty"`
+	AgentType         string    `json:"agentType,omitempty"`
+	ParentAgentID     string    `json:"parentAgentId,omitempty"`
 	SessionID         string    `json:"sessionId"`
 	Timestamp         time.Time `json:"-"`
 	WorkingDirectory  string    `json:"cwd"`
@@ -863,6 +878,9 @@ type UserPromptTransformedHandler func(input UserPromptTransformedHookInput, inv
 
 // SessionStartHookInput is the input for a session-start hook
 type SessionStartHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -904,6 +922,9 @@ type SessionStartHandler func(input SessionStartHookInput, invocation HookInvoca
 
 // SessionEndHookInput is the input for a session-end hook
 type SessionEndHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -954,6 +975,9 @@ type SessionEndHandler func(input SessionEndHookInput, invocation HookInvocation
 
 // ErrorOccurredHookInput is the input for an error-occurred hook
 type ErrorOccurredHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -1040,6 +1064,9 @@ type ErrorOccurredHandler func(input ErrorOccurredHookInput, invocation HookInvo
 
 // AgentStopHookInput is the input for an agent-stop hook.
 type AgentStopHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -1082,6 +1109,9 @@ type AgentStopHandler func(input AgentStopHookInput, invocation HookInvocation) 
 
 // SubagentStartHookInput is the input before a subagent's first turn.
 type SubagentStartHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -1124,6 +1154,7 @@ type SubagentStartHandler func(input SubagentStartHookInput, invocation HookInvo
 
 // SubagentStopHookInput is the input after a subagent completes a turn.
 type SubagentStopHookInput struct {
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -1174,6 +1205,9 @@ type SubagentStopHandler func(input SubagentStopHookInput, invocation HookInvoca
 
 // PreMCPToolCallHookInput is the input for a pre-mcp-tool-call hook
 type PreMCPToolCallHookInput struct {
+	AgentID          string    `json:"agentId,omitempty"`
+	AgentType        string    `json:"agentType,omitempty"`
+	ParentAgentID    string    `json:"parentAgentId,omitempty"`
 	SessionID        string    `json:"sessionId"`
 	Timestamp        time.Time `json:"-"`
 	WorkingDirectory string    `json:"cwd"`
@@ -1904,6 +1938,11 @@ type SessionConfig struct {
 	// controls for this session. Conflicting changes are rejected; overridable
 	// managed defaults remain mutable.
 	EnforceManagedModelDefaults *bool
+	// InteractiveUser declares that a human drives this session's conversation,
+	// enabling user-message analysis telemetry for user-authored messages.
+	// Automated messages remain excluded. Defaults to false for SDK sessions.
+	// Ignored for cloud sessions.
+	InteractiveUser *bool
 	// ManagedSettings supplies host-injected enterprise managed settings for
 	// the session. Unlike EnableManagedSettings (which asks the runtime to
 	// self-fetch account/org and device policy), this provides the managed
@@ -2511,6 +2550,9 @@ type ResumeSessionConfig struct {
 	// EnforceManagedModelDefaults re-applies managed model lock enforcement on
 	// resume. See SessionConfig.EnforceManagedModelDefaults.
 	EnforceManagedModelDefaults *bool
+	// InteractiveUser re-supplies that a human drives this session. It is not
+	// persisted and is ignored if the session is already active in the runtime.
+	InteractiveUser *bool
 	// ManagedSettings re-injects host-provided managed settings on resume. See
 	// SessionConfig.ManagedSettings. It must be re-supplied on resume: it
 	// replaces the prior injected layer, and omitting it clears that layer so
@@ -3049,6 +3091,7 @@ type createSessionRequest struct {
 	FeatureFlags                       *map[string]bool                       `json:"featureFlags,omitempty"`
 	EnableManagedSettings              *bool                                  `json:"enableManagedSettings,omitempty"`
 	EnforceManagedModelDefaults        *bool                                  `json:"enforceManagedModelDefaults,omitempty"`
+	InteractiveUser                    *bool                                  `json:"interactiveUser,omitempty"`
 	ManagedSettings                    *ManagedSettings                       `json:"managedSettings,omitempty"`
 	Traceparent                        string                                 `json:"traceparent,omitempty"`
 	Tracestate                         string                                 `json:"tracestate,omitempty"`
@@ -3159,6 +3202,7 @@ type resumeSessionRequest struct {
 	FeatureFlags                       *map[string]bool                       `json:"featureFlags,omitempty"`
 	EnableManagedSettings              *bool                                  `json:"enableManagedSettings,omitempty"`
 	EnforceManagedModelDefaults        *bool                                  `json:"enforceManagedModelDefaults,omitempty"`
+	InteractiveUser                    *bool                                  `json:"interactiveUser,omitempty"`
 	ManagedSettings                    *ManagedSettings                       `json:"managedSettings,omitempty"`
 	Traceparent                        string                                 `json:"traceparent,omitempty"`
 	Tracestate                         string                                 `json:"tracestate,omitempty"`

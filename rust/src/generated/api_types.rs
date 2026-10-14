@@ -307,6 +307,8 @@ pub mod rpc_methods {
     pub const INSTRUCTIONS_CLEARCACHE: &str = "instructions.clearCache";
     /// `skills.planInstall`
     pub const SKILLS_PLANINSTALL: &str = "skills.planInstall";
+    /// `skills.planInstallFromReference`
+    pub const SKILLS_PLANINSTALLFROMREFERENCE: &str = "skills.planInstallFromReference";
     /// `skills.applyInstall`
     pub const SKILLS_APPLYINSTALL: &str = "skills.applyInstall";
     /// `skills.installations.list`
@@ -5263,6 +5265,33 @@ pub struct CatalogMalformedCardError {
     pub message: String,
     /// How the card failed validation.
     pub reason: CatalogMalformedCardReason,
+}
+
+/// An Agent Finder materialisation reference pinning one exact resource revision.
+///
+/// It carries no origin or URL: the runtime always builds the descriptor URL on its fixed Agent
+/// Finder authority. It carries no display data either; every reviewed field comes from the
+/// verified descriptor and Skill files.
+///
+/// <div class="warning">
+///
+/// **Experimental.** This type is part of an experimental wire-protocol surface
+/// and may change or be removed in future SDK or CLI releases.
+///
+/// </div>
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogMaterializationReference {
+    /// Expected `sha256:<lowercase hex>` digest of the descriptor's bundle manifest.
+    pub bundle_digest: String,
+    /// Expected `sha256:<lowercase hex>` digest of the canonical descriptor.
+    pub descriptor_digest: String,
+    /// Agent Finder resource identifier, a positive decimal integer.
+    pub resource_id: String,
+    /// Agent Finder materialisation revision identifier, a positive decimal integer. This is not a Git commit.
+    pub revision_id: String,
+    /// Materialisation descriptor schema version, currently `1.0.0`.
+    pub schema_version: String,
 }
 
 /// The protocol version and capability set the runtime actually honoured for a successful catalog operation.
@@ -25835,6 +25864,9 @@ pub struct SessionOpenOptions {
     /// Stable integration identifier for analytics.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub integration_id: Option<String>,
+    /// Declares that a human drives this session's conversation, enabling user-message analysis (sentiment, task completion criteria, and task analytics) for user-authored messages. Automated messages remain excluded. Defaults to false for SDK sessions. Applied when the session is created or loaded from storage; ignored when resuming a session that is already active, and for cloud sessions.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interactive_user: Option<bool>,
     /// Whether experimental behavior is enabled.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_experimental_mode: Option<bool>,
@@ -28383,6 +28415,25 @@ pub struct SkillInstallationsRequest {
 pub struct SkillList {
     /// Available skills
     pub skills: Vec<Skill>,
+}
+
+/// Side-effect-free planning of one Skill from a materialisation reference rather than a search candidate.
+///
+/// <div class="warning">
+///
+/// **Experimental.** This type is part of an experimental wire-protocol surface
+/// and may change or be removed in future SDK or CLI releases.
+///
+/// </div>
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillPlanInstallFromReferenceRequest {
+    /// Required authenticated bound catalogue, skill-confirmed-installation and skill-reference-installation capabilities.
+    pub contract: CatalogClientContract,
+    /// Existing local session attached to this connection.
+    pub policy_session_id: String,
+    /// Materialisation reference to verify and plan.
+    pub reference: CatalogMaterializationReference,
 }
 
 /// Side-effect-free planning of one verified Agent Finder Skill candidate.
@@ -43386,6 +43437,9 @@ pub enum CatalogCapability {
     /// Understands `installability` and the reviewable `installPlan` on Agent Plugin candidates. Requires agent-plugin-discovery; without it, plugin candidates are unchanged. A plugin is installable only with complete, verified catalogue install data, and may still be reported as feature-disabled per selected session.
     #[serde(rename = "agent-plugin-confirmed-installation")]
     AgentPluginConfirmedInstallation,
+    /// Extends skill-confirmed-installation to planning from an Agent Finder materialisation reference through skills.planInstallFromReference, and to its distinct reference failure reasons. Requires skill-confirmed-installation. Advertised only by runtimes with the Skill installation engine linked.
+    #[serde(rename = "skill-reference-installation")]
+    SkillReferenceInstallation,
     /// Unknown variant for forward compatibility.
     #[default]
     #[serde(other)]
@@ -50777,6 +50831,21 @@ pub enum SkillInstallationFailureReason {
     /// A storage operation failed; inspect durable state before retrying.
     #[serde(rename = "write-failed")]
     WriteFailed,
+    /// The materialisation reference is malformed or uses an unsupported schema version. Returned only to callers that require skill-reference-installation.
+    #[serde(rename = "invalid-reference")]
+    InvalidReference,
+    /// Agent Finder has no materialisation for the referenced resource revision (HTTP 404). Returned only to callers that require skill-reference-installation.
+    #[serde(rename = "descriptor-not-found")]
+    DescriptorNotFound,
+    /// Agent Finder withdrew the referenced resource revision (HTTP 410). Returned only to callers that require skill-reference-installation.
+    #[serde(rename = "descriptor-withdrawn")]
+    DescriptorWithdrawn,
+    /// The retrieved descriptor does not match the referenced descriptor or bundle digest. Returned only to callers that require skill-reference-installation.
+    #[serde(rename = "digest-mismatch")]
+    DigestMismatch,
+    /// The referenced resource is not a Skill. Returned only to callers that require skill-reference-installation.
+    #[serde(rename = "unsupported-resource")]
+    UnsupportedResource,
     /// Unknown variant for forward compatibility.
     #[default]
     #[serde(other)]

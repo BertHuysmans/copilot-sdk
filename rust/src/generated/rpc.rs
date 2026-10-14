@@ -6639,6 +6639,40 @@ impl<'a> ClientRpcSkills<'a> {
         Ok(serde_json::from_value(_value)?)
     }
 
+    /// Plans installation of the Skill pinned by an Agent Finder materialisation reference without writing files. The runtime retrieves the descriptor only from its fixed Agent Finder authority and applies the same verification as skills.planInstall; the review shows only verified data. Apply the returned plan with skills.applyInstall.
+    ///
+    /// Wire method: `skills.planInstallFromReference`.
+    ///
+    /// # Parameters
+    ///
+    /// * `params` - Side-effect-free planning of one Skill from a materialisation reference rather than a search candidate.
+    ///
+    /// # Returns
+    ///
+    /// Skill installation management result with the honoured contract, or a typed refusal.
+    ///
+    /// <div class="warning">
+    ///
+    /// **Experimental.** This API is part of an experimental wire-protocol surface
+    /// and may change or be removed in future SDK or CLI releases. Pin both the
+    /// SDK and CLI versions if your code depends on it.
+    ///
+    /// </div>
+    pub async fn plan_install_from_reference(
+        &self,
+        params: SkillPlanInstallFromReferenceRequest,
+    ) -> Result<SkillInstallationManagementResult, Error> {
+        let wire_params = serde_json::to_value(params)?;
+        let _value = self
+            .client
+            .call(
+                rpc_methods::SKILLS_PLANINSTALLFROMREFERENCE,
+                Some(wire_params),
+            )
+            .await?;
+        Ok(serde_json::from_value(_value)?)
+    }
+
     /// Consumes one verified Skill installation plan, requests explicit human consent through installations.confirm on the original connection, then revalidates and installs the Skill disabled.
     ///
     /// Wire method: `skills.applyInstall`.
